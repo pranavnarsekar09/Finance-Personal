@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: fintrack-backend
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/fintrack}
+
+server:
+  port: ${SERVER_PORT:8081}
+
+app:
+  cors-origin: ${APP_CORS_ORIGIN:http://localhost:5173}
+  ai:
+    gemini-api-key: ${GEMINI_API_KEY}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
