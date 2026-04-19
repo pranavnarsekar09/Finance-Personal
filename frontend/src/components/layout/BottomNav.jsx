@@ -16,7 +16,7 @@ const ICON_MAP = {
 
 export function BottomNav() {
   return (
-    <nav className="bottom-nav-container !max-w-2xl !gap-0 !p-1">
+    <nav className="bottom-nav-container !max-w-none !gap-0 !p-1 !px-2 shadow-2xl shadow-cyan-900/20">
       {MOBILE_NAV_ITEMS.map((item) => {
         const Icon = ICON_MAP[item.to] || LayoutDashboard;
         return (
@@ -24,8 +24,8 @@ export function BottomNav() {
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `relative flex h-12 flex-col items-center justify-center transition-all duration-300 ${
-                isActive ? "is-active flex-[2] text-cyan-100" : "flex-1 text-slate-500"
+              `relative flex h-12 flex-col items-center justify-center transition-all duration-300 overflow-hidden ${
+                isActive ? "is-active flex-[1.5] text-cyan-200" : "flex-1 text-slate-500"
               }`
             }
           >
@@ -34,15 +34,15 @@ export function BottomNav() {
                 {isActive && (
                   <motion.div
                     layoutId="active-nav-bg"
-                    className="absolute inset-0 z-0 rounded-2xl bg-cyan-400/15"
+                    className="absolute inset-x-1 inset-y-1 z-0 rounded-xl bg-cyan-400/10"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
-                <div className="relative z-10 flex flex-col items-center justify-center gap-0.5">
-                  <Icon size={isActive ? 22 : 18} className="transition-all duration-300" />
+                <div className="relative z-10 flex flex-col items-center justify-center gap-0">
+                  <Icon size={isActive ? 20 : 16} className="transition-all duration-300" />
                   <span
-                    className={`whitespace-nowrap text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ${
-                      isActive ? "scale-100 opacity-100" : "scale-0 h-0 opacity-0"
+                    className={`whitespace-nowrap text-[8px] font-black uppercase tracking-tighter transition-all duration-300 ${
+                      isActive ? "scale-100 opacity-100 mt-0.5" : "scale-0 h-0 opacity-0"
                     }`}
                   >
                     {item.label}
