@@ -161,22 +161,6 @@ export function FinancePage({ profile }) {
               ))}
             </div>
           </Card>
-
-          <Card>
-            <h2 className="font-display text-2xl font-bold text-white">Expense List</h2>
-            <div className="mt-5 space-y-3">
-              {loading ? <p className="text-sm text-slate-500">Loading...</p> : null}
-              {(expenses || []).map((entry) => (
-                <div key={entry.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                  <div>
-                    <p className="font-medium text-white">{entry.categoryName}</p>
-                    <p className="text-sm text-slate-400">{shortDate(entry.date)} • {entry.paymentMethod} • {entry.note || "No note"}</p>
-                  </div>
-                  <p className="font-semibold text-cyan-100">{currency(entry.amount)}</p>
-                </div>
-              ))}
-            </div>
-          </Card>
         </div>
       </div>
     </div>

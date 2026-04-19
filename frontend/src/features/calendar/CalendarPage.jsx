@@ -59,12 +59,12 @@ export function CalendarPage() {
             <h2 className="font-display text-2xl font-bold text-white">{monthLabel(month)}</h2>
             <Button variant="secondary" onClick={() => setMonth((current) => shiftMonth(current, 1))}>Next</Button>
           </div>
-          <div className="mb-3 grid grid-cols-7 gap-3 text-center text-xs uppercase tracking-[0.24em] text-slate-500">
+          <div className="mb-3 grid grid-cols-7 gap-3 text-center text-[10px] uppercase tracking-[0.2em] text-slate-500 sm:text-xs">
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
               <div key={day}>{day}</div>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-3">
+          <div className="calendar-grid">
             {calendarCells.map((date, index) => {
               const entry = date ? entryMap.get(date) : null;
               return (
@@ -73,22 +73,16 @@ export function CalendarPage() {
                   type="button"
                   disabled={!date}
                   onClick={() => date && setSelectedDate(date)}
-                  className={`min-h-24 rounded-2xl border px-2 py-3 text-left transition ${
-                    !date
-                      ? "border-transparent bg-transparent"
-                      : selectedDate === date
-                        ? "border-cyan-300/40 bg-cyan-400/10"
-                        : "border-white/10 bg-white/5 hover:border-white/20"
-                  }`}
+                  className={`calendar-day ${selectedDate === date ? "is-selected" : ""} ${!date ? "opacity-0 pointer-events-none" : ""}`}
                 >
                   {date ? (
                     <>
-                      <p className="text-sm font-semibold text-white">{Number(date.slice(-2))}</p>
-                      <div className="mt-3 flex gap-1">
-                        {entry?.hasExpenses ? <span className="h-2 w-2 rounded-full bg-cyan-300" /> : null}
-                        {entry?.hasMeals ? <span className="h-2 w-2 rounded-full bg-emerald-300" /> : null}
+                      <p className="text-sm font-bold text-white sm:text-base">{Number(date.slice(-2))}</p>
+                      <div className="mt-1 flex gap-0.5 sm:mt-2 sm:gap-1">
+                        {entry?.hasExpenses ? <span className="h-1 w-1 rounded-full bg-cyan-300 sm:h-1.5 sm:w-1.5" /> : null}
+                        {entry?.hasMeals ? <span className="h-1 w-1 rounded-full bg-emerald-300 sm:h-1.5 sm:w-1.5" /> : null}
                       </div>
-                      <p className="mt-3 text-xs text-slate-500">
+                      <p className="mt-1 hidden text-[10px] text-slate-500 sm:block">
                         {entry?.expenses?.length || 0} exp • {entry?.meals?.length || 0} meals
                       </p>
                     </>

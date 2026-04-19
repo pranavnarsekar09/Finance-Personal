@@ -5,7 +5,8 @@ export const MOBILE_NAV_ITEMS = [
   { to: "/", label: "Dashboard" },
   { to: "/finance", label: "Finance" },
   { to: "/food", label: "Food" },
-  { to: "/calendar", label: "Calendar" },
+  { to: "/calendar", label: "History" },
+  { to: "/activity", label: "Activity" },
   { to: "/chat", label: "Chat" },
   { to: "/profile", label: "Profile" },
 ];

@@ -12,6 +12,9 @@ public record DashboardSummaryResponse(
         Double caloriesToday,
         List<CategorySpendSummary> categorySpending,
         List<ExpenseResponse> recentTransactions,
-        Double monthlyFoodCost
+        Double monthlyFoodCost,
+        List<DailySpendSummary> dailySpending,
+        Integer streak,
+        Double spentToday
 ) {
 }

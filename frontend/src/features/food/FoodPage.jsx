@@ -215,26 +215,6 @@ export function FoodPage({ profile }) {
               <p className="mt-5 text-sm text-slate-400">Run an analysis to see calories, macros, and estimated cost.</p>
             )}
           </Card>
-
-          <Card>
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-2xl font-bold text-white">Diary</h2>
-              <p className="text-sm text-cyan-100">{currency(monthlyFoodCost)} this month</p>
-            </div>
-            <div className="mt-5 space-y-3">
-              {(logs || []).map((entry) => (
-                <div key={entry.id} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium text-white">{entry.foodName}</p>
-                    <p className="font-semibold text-cyan-100">{entry.calories} kcal</p>
-                  </div>
-                  <p className="mt-2 text-sm text-slate-400">
-                    Protein {entry.protein}g • Carbs {entry.carbs}g • Fat {entry.fat}g • {currency(entry.estimatedCost)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </Card>
         </div>
       </div>
     </div>

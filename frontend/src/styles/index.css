@@ -58,6 +58,69 @@ body {
   @apply flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium transition;
 }
 
+/* --- CALENDAR FIXES --- */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.75rem;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .calendar-grid {
+    gap: 0.25rem;
+  }
+}
+
+.calendar-day {
+  @apply relative flex flex-col items-center justify-center rounded-xl border border-white/10 bg-white/5 p-2 text-center transition-all duration-200;
+  aspect-ratio: 1 / 1.2;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.calendar-day:not(:disabled):hover {
+  @apply border-white/20 bg-white/10;
+}
+
+.calendar-day.is-selected {
+  @apply border-cyan-300/40 bg-cyan-400/10;
+}
+
+/* --- NAVBAR FIXES --- */
+.bottom-nav-container {
+  @apply fixed bottom-6 left-1/2 z-50 flex w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 items-center justify-around rounded-[24px] border border-white/10 bg-slate-950/80 p-1.5 shadow-glass backdrop-blur-xl md:hidden;
+}
+
+.bottom-nav-item {
+  @apply flex flex-1 flex-col items-center justify-center gap-1 rounded-2xl py-2.5 text-slate-400 transition-all duration-200;
+  min-width: 0;
+}
+
+.bottom-nav-item.is-active {
+  @apply bg-cyan-400/15 text-cyan-100;
+}
+
+.bottom-nav-item span {
+  @apply w-full truncate px-1 text-center text-[10px] font-semibold uppercase tracking-wider;
+}
+
+/* --- CONNECTION STATUS --- */
+.connection-status-wrapper {
+  @apply fixed right-4 top-4 z-[9999] flex items-center justify-center;
+}
+
+@keyframes status-pulse {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+.status-dot-pulse {
+  animation: status-pulse 2s infinite ease-in-out;
+}
+
 .chart-wrap .recharts-cartesian-grid line {
   stroke: rgba(255, 255, 255, 0.08);
 }

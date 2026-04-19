@@ -88,6 +88,39 @@ public class DashboardService {
                 ))
                 .toList();
 
+        List<com.personalproject.tracker.dashboard.dto.DailySpendSummary> dailySpending = expenses.stream()
+                .collect(Collectors.groupingBy(
+                        com.personalproject.tracker.expense.Expense::getDate,
+                        Collectors.summingDouble(com.personalproject.tracker.expense.Expense::getAmount)
+                ))
+                .entrySet().stream()
+                .map(entry -> new com.personalproject.tracker.dashboard.dto.DailySpendSummary(entry.getKey(), entry.getValue()))
+                .sorted(Comparator.comparing(com.personalproject.tracker.dashboard.dto.DailySpendSummary::date))
+                .toList();
+
+        double spentToday = expenseRepository.findByUserIdAndDate(userId, LocalDate.now())
+                .stream()
+                .mapToDouble(com.personalproject.tracker.expense.Expense::getAmount)
+                .sum();
+
+        // Calculate Streak
+        java.util.Set<LocalDate> activeDates = new java.util.HashSet<>();
+        expenseRepository.findByUserId(userId).forEach(e -> activeDates.add(e.getDate()));
+        foodLogRepository.findByUserId(userId).forEach(f -> activeDates.add(f.getDate()));
+
+        int streak = 0;
+        LocalDate checkDate = LocalDate.now();
+        
+        // If nothing today, check if streak ended yesterday
+        if (!activeDates.contains(checkDate)) {
+            checkDate = checkDate.minusDays(1);
+        }
+        
+        while (activeDates.contains(checkDate)) {
+            streak++;
+            checkDate = checkDate.minusDays(1);
+        }
+
         return new DashboardSummaryResponse(
                 userId,
                 profile.getMonthlyBudget(),
@@ -97,7 +130,10 @@ public class DashboardService {
                 caloriesToday,
                 categorySpending,
                 recentTransactions,
-                foodCost
+                foodCost,
+                dailySpending,
+                streak,
+                spentToday
         );
     }
 }

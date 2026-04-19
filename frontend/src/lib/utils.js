@@ -65,3 +65,9 @@ export const fileToDataUrl = (file) =>
 export const emitDataRefresh = () => {
   window.dispatchEvent(new CustomEvent("fintrack:data-updated"));
 };
+
+export const haptic = (pattern = 10) => {
+  if (typeof window !== "undefined" && window.navigator && window.navigator.vibrate) {
+    window.navigator.vibrate(pattern);
+  }
+};
