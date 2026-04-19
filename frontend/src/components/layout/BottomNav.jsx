@@ -1,3 +1,4 @@
+import { useRef, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import { motion } from "framer-motion";
 import { MOBILE_NAV_ITEMS } from "../../lib/constants";
@@ -24,7 +25,7 @@ export function BottomNav() {
             to={item.to}
             className={({ isActive }) =>
               `relative flex h-12 flex-col items-center justify-center transition-all duration-300 ${
-                isActive ? "flex-[2] text-cyan-100" : "flex-1 text-slate-500"
+                isActive ? "is-active flex-[2] text-cyan-100" : "flex-1 text-slate-500"
               }`
             }
           >

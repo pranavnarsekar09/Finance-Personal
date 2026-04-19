@@ -97,24 +97,6 @@ export function DashboardPage() {
           />
         </div>
 
-        {/* Quick Actions */}
-        <div className="mt-6 flex gap-3">
-          <button 
-            onClick={() => { haptic(20); window.location.hash = "/finance"; }}
-            className="flex-1 rounded-2xl bg-white/5 border border-white/10 p-4 text-center hover:bg-white/10 transition-all"
-          >
-            <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Log</p>
-            <p className="text-lg font-bold text-white">Expense</p>
-          </button>
-          <button 
-            onClick={() => { haptic(20); window.location.hash = "/food"; }}
-            className="flex-1 rounded-2xl bg-white/5 border border-white/10 p-4 text-center hover:bg-white/10 transition-all"
-          >
-            <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Log</p>
-            <p className="text-lg font-bold text-white">Meal</p>
-          </button>
-        </div>
-
         <div className="mt-6">
           <Card className="border-cyan-300/20 bg-gradient-to-br from-cyan-400/10 to-transparent">
             <div className="flex items-start gap-4">
