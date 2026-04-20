@@ -20,47 +20,37 @@ import { ConnectionStatus } from "../components/layout/ConnectionStatus";
 function AppLayout({ profile, onProfileUpdate }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [transitionConfig, setTransitionConfig] = useState({
-    type: "click",
-    direction: 0
-  });
+  
+  const currentIndex = MOBILE_NAV_ITEMS.findIndex((item) => item.to === location.pathname);
+  const [session, setSession] = useState({ prevIndex: currentIndex, direction: 0 });
+
+  // Detect direction automatically for any navigation (swipe or click)
+  if (currentIndex !== session.prevIndex && currentIndex !== -1) {
+    setSession({
+      direction: currentIndex > session.prevIndex ? 1 : -1,
+      prevIndex: currentIndex
+    });
+  }
 
   const handleSwipe = (direction) => {
-    const currentIndex = MOBILE_NAV_ITEMS.findIndex((item) => item.to === location.pathname);
-    if (currentIndex === -1) return;
-
-    let nextIndex = currentIndex + direction;
+    const nextIndex = currentIndex + direction;
     if (nextIndex >= 0 && nextIndex < MOBILE_NAV_ITEMS.length) {
       haptic(10);
-      setTransitionConfig({ type: "swipe", direction });
       navigate(MOBILE_NAV_ITEMS[nextIndex].to);
     }
   };
 
-  // Default back to click after transition starts
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setTransitionConfig(prev => ({ ...prev, type: "click" }));
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [location.pathname]);
-
   const variants = {
-    enter: (config) => ({
-      x: config.type === "swipe" ? (config.direction > 0 ? 100 : -100) : 0,
-      y: config.type === "click" ? 40 : 0,
+    enter: (dir) => ({
+      x: dir > 0 ? "100%" : dir < 0 ? "-100%" : 0,
       opacity: 0,
     }),
     center: {
-      zIndex: 1,
       x: 0,
-      y: 0,
       opacity: 1,
     },
-    exit: (config) => ({
-      zIndex: 0,
-      x: config.type === "swipe" ? (config.direction > 0 ? -100 : 100) : 0,
-      y: config.type === "click" ? -40 : 0,
+    exit: (dir) => ({
+      x: dir > 0 ? "-100%" : dir < 0 ? "100%" : 0,
       opacity: 0,
     }),
   };
@@ -68,33 +58,33 @@ function AppLayout({ profile, onProfileUpdate }) {
   return (
     <>
       <ConnectionStatus />
-      <div className="page-shell pb-32 md:pb-10">
+      <div className="page-shell overflow-x-hidden pb-32 md:pb-10">
         <DesktopNav />
         <motion.div 
           className="flex-1"
           drag="x"
           dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.1}
-          onDragStart={() => setTransitionConfig(prev => ({ ...prev, type: "swipe" }))}
+          dragElastic={0.05}
           onDragEnd={(_, info) => {
-            const threshold = 30;
+            const threshold = 50;
             if (info.offset.x > threshold) handleSwipe(-1); 
             if (info.offset.x < -threshold) handleSwipe(1); 
           }}
         >
-          <AnimatePresence mode="wait" custom={transitionConfig}>
+          <AnimatePresence initial={false} custom={session.direction} mode="popLayout">
             <motion.div
               key={location.pathname}
-              custom={transitionConfig}
+              custom={session.direction}
               variants={variants}
               initial="enter"
               animate="center"
               exit="exit"
               transition={{
-                x: { type: "spring", stiffness: 300, damping: 30 },
-                y: { type: "spring", stiffness: 250, damping: 25 },
+                x: { type: "tween", ease: "circOut", duration: 0.35 },
                 opacity: { duration: 0.2 }
               }}
+              className="w-full"
+              style={{ willChange: "transform, opacity" }}
             >
               <Routes location={location}>
                 <Route path="/" element={<DashboardPage profile={profile} />} />

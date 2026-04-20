@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, memo } from "react";
 import {
   LineChart,
   Line,
@@ -16,7 +16,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const COLORS = ["#22d3ee", "#34d399", "#818cf8", "#f472b6", "#fbbf24", "#a78bfa"];
 
-export function DashboardCharts({ dailySpending = [], categorySpending = [] }) {
+export const DashboardCharts = memo(function DashboardCharts({ dailySpending = [], categorySpending = [] }) {
   const [weekOffset, setWeekOffset] = useState(0);
 
   // Group daily spending into weeks (7-day chunks)
@@ -53,7 +53,7 @@ export function DashboardCharts({ dailySpending = [], categorySpending = [] }) {
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid gap-6 lg:grid-cols-2" style={{ transform: 'translateZ(0)' }}>
       {/* Weekly Spending Trend */}
       <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
         <div className="mb-4 flex items-center justify-between">
@@ -78,8 +78,8 @@ export function DashboardCharts({ dailySpending = [], categorySpending = [] }) {
             </button>
           </div>
         </div>
-        <div className="h-64 w-full">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="h-64 w-full" style={{ contain: 'layout size' }}>
+          <ResponsiveContainer width="100%" height="100%" debounce={50}>
             <LineChart data={currentWeekData}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
               <XAxis dataKey="formattedDate" stroke="#64748b" fontSize={10} tickLine={false} axisLine={false} />
@@ -88,7 +88,7 @@ export function DashboardCharts({ dailySpending = [], categorySpending = [] }) {
                 contentStyle={{ background: "#0f172a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px" }}
                 formatter={(val) => currency(val)}
               />
-              <Line type="monotone" dataKey="amount" stroke="#22d3ee" strokeWidth={3} dot={{ r: 4, fill: "#22d3ee" }} />
+              <Line type="monotone" dataKey="amount" stroke="#22d3ee" strokeWidth={3} dot={{ r: 4, fill: "#22d3ee" }} isAnimationActive={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -97,8 +97,8 @@ export function DashboardCharts({ dailySpending = [], categorySpending = [] }) {
       {/* Category Vertical Bar Chart */}
       <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
         <h3 className="mb-4 font-display text-lg font-bold text-white">Category Split</h3>
-        <div className="h-64 w-full">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="h-64 w-full" style={{ contain: 'layout size' }}>
+          <ResponsiveContainer width="100%" height="100%" debounce={50}>
             <BarChart data={categorySpending.filter((c) => c.spent > 0)}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
               <XAxis 
@@ -119,7 +119,7 @@ export function DashboardCharts({ dailySpending = [], categorySpending = [] }) {
                 contentStyle={{ background: "#0f172a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px" }}
                 formatter={(val) => currency(val)}
               />
-              <Bar dataKey="spent" radius={[4, 4, 0, 0]}>
+              <Bar dataKey="spent" radius={[4, 4, 0, 0]} isAnimationActive={false}>
                 {categorySpending.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
@@ -130,4 +130,4 @@ export function DashboardCharts({ dailySpending = [], categorySpending = [] }) {
       </div>
     </div>
   );
-}
+});

@@ -55,7 +55,7 @@ export function ChatPage() {
   ];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)] md:h-[calc(100vh-8rem)]">
+    <div className="page-shell flex flex-col h-[calc(100vh-12rem)] md:h-[calc(100vh-8rem)]">
       <PageHeader
         eyebrow="AI Assistant"
         title="Chat with your data."

@@ -1,4 +1,6 @@
-export function ProgressBar({ value, total = 100, tone = "cyan" }) {
+import { memo } from "react";
+
+export const ProgressBar = memo(function ProgressBar({ value, total = 100, tone = "cyan" }) {
   const pct = Math.max(0, Math.min(100, total === 0 ? 0 : (value / total) * 100));
   const gradient =
     tone === "green" ? "from-emerald-400 to-lime-300" : "from-cyan-400 to-sky-300";
@@ -11,4 +13,4 @@ export function ProgressBar({ value, total = 100, tone = "cyan" }) {
       />
     </div>
   );
-}
+});

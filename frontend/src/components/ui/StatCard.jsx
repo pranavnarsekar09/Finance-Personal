@@ -1,6 +1,7 @@
+import { memo } from "react";
 import { Card } from "./Card";
 
-export function StatCard({ label, value, subtext, accent = "from-cyan-400/20 to-emerald-300/10" }) {
+export const StatCard = memo(function StatCard({ label, value, subtext, accent = "from-cyan-400/20 to-emerald-300/10" }) {
   return (
     <Card className={`bg-gradient-to-br ${accent}`}>
       <p className="text-xs uppercase tracking-[0.28em] text-slate-400">{label}</p>
@@ -8,4 +9,4 @@ export function StatCard({ label, value, subtext, accent = "from-cyan-400/20 to-
       <p className="mt-2 text-sm text-slate-300">{subtext}</p>
     </Card>
   );
-}
+});

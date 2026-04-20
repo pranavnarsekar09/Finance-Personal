@@ -21,7 +21,11 @@ body {
 }
 
 .page-shell {
-  @apply mx-auto flex min-h-screen max-w-7xl flex-col px-4 pb-28 pt-6 sm:px-6 lg:px-8;
+  @apply mx-auto flex min-h-screen max-w-7xl flex-col px-4 sm:px-6 lg:px-8;
+  padding-top: calc(1.5rem + env(safe-area-inset-top));
+  padding-bottom: calc(8rem + env(safe-area-inset-bottom));
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .section-title {
