@@ -34,8 +34,8 @@ export const api = {
       method: "PUT",
       body: JSON.stringify(payload),
     }),
-  getDashboard: (userId, month) =>
-    request(`/api/dashboard/summary?userId=${encodeURIComponent(userId)}&month=${month}`),
+  getDashboard: (userId, month, today) =>
+    request(`/api/dashboard/summary?userId=${encodeURIComponent(userId)}&month=${month}${today ? `&today=${today}` : ""}`),
   getExpenses: (userId, month) =>
     request(`/api/expenses?userId=${encodeURIComponent(userId)}&month=${month}`),
   addExpense: (payload) =>

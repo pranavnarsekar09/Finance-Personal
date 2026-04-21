@@ -34,8 +34,10 @@ public class DashboardService {
         this.foodLogRepository = foodLogRepository;
     }
 
-    public DashboardSummaryResponse getSummary(String userId, String month) {
+    public DashboardSummaryResponse getSummary(String userId, String month, String todayStr) {
         MonthRange range = DateRangeUtils.parseMonth(month);
+        LocalDate today = todayStr != null ? DateRangeUtils.parseDate(todayStr) : LocalDate.now();
+        
         UserProfile profile = profileRepository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Profile not found for userId: " + userId));
 
@@ -54,7 +56,7 @@ public class DashboardService {
 
         double totalSpent = expenses.stream().mapToDouble(com.personalproject.tracker.expense.Expense::getAmount).sum();
         double foodCost = foodLogs.stream().mapToDouble(com.personalproject.tracker.food.FoodLog::getEstimatedCost).sum();
-        double caloriesToday = foodLogRepository.findByUserIdAndDate(userId, LocalDate.now())
+        double caloriesToday = foodLogRepository.findByUserIdAndDate(userId, today)
                 .stream()
                 .mapToDouble(com.personalproject.tracker.food.FoodLog::getCalories)
                 .sum();
@@ -98,7 +100,7 @@ public class DashboardService {
                 .sorted(Comparator.comparing(com.personalproject.tracker.dashboard.dto.DailySpendSummary::date))
                 .toList();
 
-        double spentToday = expenseRepository.findByUserIdAndDate(userId, LocalDate.now())
+        double spentToday = expenseRepository.findByUserIdAndDate(userId, today)
                 .stream()
                 .mapToDouble(com.personalproject.tracker.expense.Expense::getAmount)
                 .sum();
@@ -109,7 +111,7 @@ public class DashboardService {
         foodLogRepository.findByUserId(userId).forEach(f -> activeDates.add(f.getDate()));
 
         int streak = 0;
-        LocalDate checkDate = LocalDate.now();
+        LocalDate checkDate = today;
         
         // If nothing today, check if streak ended yesterday
         if (!activeDates.contains(checkDate)) {

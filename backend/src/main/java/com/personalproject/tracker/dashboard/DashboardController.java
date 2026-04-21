@@ -17,7 +17,11 @@ public class DashboardController {
     }
 
     @GetMapping("/summary")
-    public DashboardSummaryResponse getSummary(@RequestParam String userId, @RequestParam String month) {
-        return dashboardService.getSummary(userId, month);
+    public DashboardSummaryResponse getSummary(
+            @RequestParam String userId,
+            @RequestParam String month,
+            @RequestParam(required = false) String today
+    ) {
+        return dashboardService.getSummary(userId, month, today);
     }
 }

@@ -4,7 +4,7 @@ import { motion, useScroll, useMotionValue, useTransform } from "framer-motion";
 import { useAsync } from "../../hooks/useAsync";
 import { api } from "../../lib/api";
 import { USER_ID } from "../../lib/constants";
-import { currency, monthKey, shortDate, haptic, emitDataRefresh } from "../../lib/utils";
+import { currency, monthKey, todayKey, shortDate, haptic, emitDataRefresh } from "../../lib/utils";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { Card } from "../../components/ui/Card";
 import { StatCard } from "../../components/ui/StatCard";
@@ -16,8 +16,9 @@ export function DashboardPage() {
   const [refreshTick, setRefreshTick] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const currentMonth = monthKey();
+  const todayDate = todayKey();
   
-  const { data: summary, execute: reloadSummary } = useAsync(() => api.getDashboard(USER_ID, currentMonth), [currentMonth, refreshTick]);
+  const { data: summary, execute: reloadSummary } = useAsync(() => api.getDashboard(USER_ID, currentMonth, todayDate), [currentMonth, todayDate, refreshTick]);
   const { data: insight, execute: reloadInsight } = useAsync(() => api.getInsight(USER_ID), [refreshTick]);
   const { data: goals } = useAsync(() => api.getGoals(USER_ID), [refreshTick]);
 
