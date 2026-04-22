@@ -70,7 +70,7 @@ export function ConnectionStatus() {
   const current = config[status];
 
   return (
-    <div className="connection-status-wrapper fixed bottom-20 right-6 z-[100] md:bottom-6">
+    <div className="connection-status-wrapper fixed top-6 right-6 z-[100]">
       <div className="group relative flex items-center gap-2">
         <div className="relative flex h-3 w-3">
           {current.pulse && (
@@ -79,8 +79,8 @@ export function ConnectionStatus() {
           <span className={`relative inline-flex h-3 w-3 rounded-full ${current.color} shadow-[0_0_8px_rgba(0,0,0,0.5)]`}></span>
         </div>
         
-        {/* Tooltip */}
-        <div className="pointer-events-none absolute bottom-full right-0 mb-3 translate-y-2 opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100">
+        {/* Tooltip - Now appears below the dot since dot is at the top */}
+        <div className="pointer-events-none absolute top-full right-0 mt-3 translate-y-[-8px] opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100">
           <div className="whitespace-nowrap rounded-xl bg-slate-900/95 px-4 py-2 text-xs font-medium text-white shadow-2xl border border-white/10 backdrop-blur-sm">
             <div className="flex flex-col gap-1">
               <span className="font-bold">{current.text}</span>
