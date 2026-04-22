@@ -42,9 +42,8 @@ public class InsightService {
 
         YearMonth month = YearMonth.now();
         LocalDate start = month.atDay(1);
-        LocalDate end = month.plusMonths(1).atDay(1);
-        var expenses = expenseRepository.findByUserId(userId).stream()
-                .filter(expense -> !expense.getDate().isBefore(start) && expense.getDate().isBefore(end))
+        LocalDate end = month.atEndOfMonth();
+        var expenses = expenseRepository.findByUserIdAndDateBetween(userId, start, end).stream()
                 .sorted(Comparator.comparing(Expense::getDate).reversed().thenComparing(Expense::getCreatedAt).reversed())
                 .toList();
 

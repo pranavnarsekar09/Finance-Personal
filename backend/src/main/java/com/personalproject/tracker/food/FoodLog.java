@@ -4,9 +4,11 @@ import java.time.Instant;
 import java.time.LocalDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "foodLogs")
+@CompoundIndex(name = "user_date_idx", def = "{'userId': 1, 'date': 1}")
 public class FoodLog {
 
     @Id

@@ -14,6 +14,7 @@ export function FinancePage({ profile }) {
   const categories = profile?.categories || [];
   const [month] = useState(monthKey());
   const [status, setStatus] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const [form, setForm] = usePersistentState("fintrack-expense-draft", {
     amount: "",
     categoryName: categories[0]?.name || "",
@@ -55,6 +56,7 @@ export function FinancePage({ profile }) {
   const submit = async (event) => {
     event.preventDefault();
     setStatus("");
+    setIsSaving(true);
 
     try {
       const created = await api.addExpense({
@@ -73,6 +75,8 @@ export function FinancePage({ profile }) {
       emitDataRefresh();
     } catch (error) {
       setStatus(error.message);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -140,7 +144,9 @@ export function FinancePage({ profile }) {
               <input type="checkbox" checked={form.isRecurring} onChange={(event) => setForm({ ...form, isRecurring: event.target.checked })} />
               Mark as recurring
             </label>
-            <Button className="w-full" type="submit">Save Expense</Button>
+            <Button className="w-full" type="submit" disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save Expense"}
+            </Button>
             {status ? <p className="text-sm text-cyan-100">{status}</p> : null}
           </form>
         </Card>

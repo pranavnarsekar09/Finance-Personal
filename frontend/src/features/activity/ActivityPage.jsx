@@ -9,9 +9,11 @@ import { Button } from "../../components/ui/Button";
 import { Search, Filter, ArrowUpRight, ArrowDownRight } from "lucide-react";
 
 export function ActivityPage({ profile }) {
-  const [month, setMonth] = useState(monthKey());
+  const [month] = useState(monthKey());
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const { data: summary, loading } = useAsync(() => api.getDashboard(USER_ID, month), [month]);
+
+  const { data: expenses, loading: loadingExpenses } = useAsync(() => api.getExpenses(USER_ID, month), [month]);
+  const { data: logs, loading: loadingLogs } = useAsync(() => api.getFoodLogs(USER_ID, month), [month]);
 
   const categories = useMemo(() => {
     if (!profile?.categories) return ["All"];
@@ -19,13 +21,30 @@ export function ActivityPage({ profile }) {
   }, [profile]);
 
   const activities = useMemo(() => {
-    if (!summary) return [];
-    let list = summary.recentTransactions || [];
+    const allExpenses = (expenses || []).map(e => ({ ...e, type: 'expense' }));
+    const allFood = (logs || []).map(l => ({
+      ...l,
+      type: 'food',
+      amount: l.estimatedCost,
+      categoryName: 'Food'
+    }));
+
+    let combined = [...allExpenses, ...allFood].sort((a, b) => {
+      // Primary sort: Date
+      const dateDiff = new Date(b.date) - new Date(a.date);
+      if (dateDiff !== 0) return dateDiff;
+      // Secondary sort: CreatedAt (if available)
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
     if (selectedCategory !== "All") {
-      list = list.filter(item => item.categoryName === selectedCategory);
+      combined = combined.filter(item => item.categoryName === selectedCategory);
     }
-    return list;
-  }, [summary, selectedCategory]);
+
+    return combined;
+  }, [expenses, logs, selectedCategory]);
+
+  const loading = loadingExpenses || loadingLogs;
 
   return (
     <div className="page-shell">
@@ -44,11 +63,10 @@ export function ActivityPage({ profile }) {
               haptic(5);
               setSelectedCategory(cat);
             }}
-            className={`whitespace-nowrap rounded-full px-5 py-2 text-xs font-bold transition-all ${
-              selectedCategory === cat 
-                ? "bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-400/20" 
+            className={`whitespace-nowrap rounded-full px-5 py-2 text-xs font-bold transition-all ${selectedCategory === cat
+                ? "bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-400/20"
                 : "bg-white/5 text-slate-400 hover:bg-white/10"
-            }`}
+              }`}
           >
             {cat}
           </button>
@@ -58,8 +76,8 @@ export function ActivityPage({ profile }) {
       <div className="mb-6 flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder={`Search ${selectedCategory === "All" ? "all" : selectedCategory}...`}
             className="text-input pl-10"
           />

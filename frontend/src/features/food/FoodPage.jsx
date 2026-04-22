@@ -20,6 +20,8 @@ export function FoodPage({ profile }) {
   const [preferredCategory, setPreferredCategory] = usePersistentState("fintrack-food-category", "");
   const [analysis, setAnalysis] = useState(null);
   const [status, setStatus] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const { data: logs, setData, execute } = useAsync(() => api.getFoodLogs(USER_ID, month), [month], { initialData: [] });
 
   useEffect(() => {
@@ -46,12 +48,15 @@ export function FoodPage({ profile }) {
 
   const analyze = async () => {
     setStatus("");
+    setIsAnalyzing(true);
     try {
       const result = await api.analyzeFood({ imageUrl, note });
       setAnalysis(result);
       setStatus("Analysis ready.");
     } catch (error) {
       setStatus(error.message);
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -66,6 +71,7 @@ export function FoodPage({ profile }) {
 
   const confirmLog = async () => {
     setStatus("");
+    setIsSaving(true);
     try {
       const saved = await api.saveFoodLog({
         userId: USER_ID,
@@ -91,6 +97,8 @@ export function FoodPage({ profile }) {
       emitDataRefresh();
     } catch (error) {
       setStatus(error.message);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -100,6 +108,7 @@ export function FoodPage({ profile }) {
       setStatus("Food Name is required to log manually.");
       return;
     }
+    setIsSaving(true);
     try {
       const saved = await api.saveFoodLog({
         userId: USER_ID,
@@ -124,6 +133,8 @@ export function FoodPage({ profile }) {
       emitDataRefresh();
     } catch (error) {
       setStatus(error.message);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -179,8 +190,12 @@ export function FoodPage({ profile }) {
               </div>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              <Button variant="secondary" onClick={logManually} disabled={!manualFoodName}>Log Directly</Button>
-              <Button onClick={analyze}>Analyze Meal</Button>
+              <Button variant="secondary" onClick={logManually} disabled={!manualFoodName || isSaving}>
+                {isSaving && !analysis ? "Saving..." : "Log Directly"}
+              </Button>
+              <Button onClick={analyze} disabled={isAnalyzing}>
+                {isAnalyzing ? "Analyzing..." : "Analyze Meal"}
+              </Button>
             </div>
             {status ? <p className="text-sm text-cyan-100">{status}</p> : null}
           </div>
@@ -193,7 +208,11 @@ export function FoodPage({ profile }) {
                 <h2 className="font-display text-2xl font-bold text-white">Analysis Result</h2>
                 <p className="text-sm text-muted">Gemini-powered estimate with a safe fallback if the API key is missing.</p>
               </div>
-              {analysis ? <Button onClick={confirmLog}>Confirm & Log</Button> : null}
+              {analysis ? (
+                <Button onClick={confirmLog} disabled={isSaving}>
+                  {isSaving ? "Saving..." : "Confirm & Log"}
+                </Button>
+              ) : null}
             </div>
             {analysis ? (
               <div className="mt-5 grid gap-4 md:grid-cols-2">
