@@ -11,6 +11,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -22,6 +23,11 @@ public class InsightService {
     private final ExpenseRepository expenseRepository;
     private final GeminiClient geminiClient;
     private final ObjectMapper objectMapper;
+    
+    // Simple cache to prevent redundant Gemini calls
+    private final Map<String, InsightCacheEntry> insightCache = new ConcurrentHashMap<>();
+
+    private record InsightCacheEntry(InsightResponse response, String cacheKey) {}
 
     public InsightService(ProfileRepository profileRepository, ExpenseRepository expenseRepository, GeminiClient geminiClient, ObjectMapper objectMapper) {
         this.profileRepository = profileRepository;
@@ -58,6 +64,15 @@ public class InsightService {
                 .map(Map.Entry::getKey)
                 .orElse("No category yet");
 
+        // Create a cache key based on the data that influences the prompt
+        String cacheKey = String.format("%.2f|%.2f|%.2f|%.2f|%.1f|%s", 
+                profile.getMonthlyBudget(), totalSpent, remaining, avgDailySpend, runway, topCategory);
+
+        InsightCacheEntry cached = insightCache.get(userId);
+        if (cached != null && cached.cacheKey().equals(cacheKey)) {
+            return cached.response();
+        }
+
         String headline = "AI Insight";
         String summary = totalSpent > profile.getMonthlyBudget()
                 ? "You have crossed your planned monthly budget. Tightening spend in your highest category could stabilize the month."
@@ -92,7 +107,7 @@ public class InsightService {
             System.err.println("Failed to fetch/parse Gemini insight: " + e.getMessage());
         }
 
-        return new InsightResponse(
+        InsightResponse response = new InsightResponse(
                 userId,
                 headline,
                 summary,
@@ -100,5 +115,10 @@ public class InsightService {
                 avgDailySpend,
                 topCategory
         );
+        
+        // Cache the successful or fallback response
+        insightCache.put(userId, new InsightCacheEntry(response, cacheKey));
+
+        return response;
     }
 }

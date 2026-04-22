@@ -18,10 +18,18 @@ export function ConnectionStatus() {
         });
 
         if (response.ok) {
-          setStatus("connected");
-          // Hide after 3 seconds of being connected to keep UI clean
-          setTimeout(() => setIsVisible(false), 3000);
-          clearInterval(intervalId);
+          setStatus((prev) => {
+            if (prev !== "connected") {
+              // Hide after 3 seconds of being connected to keep UI clean
+              setTimeout(() => setIsVisible(false), 3000);
+              
+              // Switch to "Keep Alive" mode (14 mins) to prevent Render from sleeping.
+              // This keeps the service active without aggressive polling.
+              clearInterval(intervalId);
+              intervalId = setInterval(checkConnection, 14 * 60 * 1000);
+            }
+            return "connected";
+          });
           clearTimeout(wakingTimeoutId);
         } else {
           throw new Error("Server response not OK");
