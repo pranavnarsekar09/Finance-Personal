@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
+import { Camera, Salad } from "lucide-react";
 import { useAsync } from "../../hooks/useAsync";
 import { usePersistentState } from "../../hooks/usePersistentState";
 import { api } from "../../lib/api";
 import { USER_ID } from "../../lib/constants";
 import { currency, emitDataRefresh, fileToDataUrl, monthKey, todayKey } from "../../lib/utils";
-import { PageHeader } from "../../components/layout/PageHeader";
 import { Button } from "../../components/ui/Button";
-import { Card } from "../../components/ui/Card";
 import { MacroChart } from "../../components/charts/MacroChart";
+import { AppCard, SectionHeader, TransactionItem } from "../../ui/fintech";
 
 export function FoodPage({ profile }) {
   const categories = profile?.categories || [];
@@ -48,6 +48,10 @@ export function FoodPage({ profile }) {
 
   const analyze = async () => {
     setStatus("");
+    if (!imageUrl && !note && !manualFoodName) {
+      setStatus("Add a photo, URL, note, or food name before running analysis.");
+      return;
+    }
     setIsAnalyzing(true);
     try {
       const result = await api.analyzeFood({ imageUrl, note });
@@ -112,7 +116,7 @@ export function FoodPage({ profile }) {
     try {
       const saved = await api.saveFoodLog({
         userId: USER_ID,
-        imageUrl: imageUrl,
+        imageUrl,
         foodName: manualFoodName,
         calories: 0,
         protein: 0,
@@ -140,55 +144,75 @@ export function FoodPage({ profile }) {
 
   return (
     <div className="page-shell">
-      <PageHeader
-        eyebrow="Food"
-        title="Turn meals into signals."
-        description="Analyze a meal from a photo or URL, confirm the nutrition, and log it into your calorie diary."
-      />
+      <div className="mb-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-500">Food</p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Turn meals into clear signals</h1>
+        <p className="mt-2 text-sm text-slate-500">
+          Analyze a meal from a photo, log it manually, and review the nutrition with a lighter UI.
+        </p>
+      </div>
 
-      <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-        <Card>
-          <h2 className="font-display text-2xl font-bold text-white">Analyze Meal</h2>
-          <div className="mt-5 space-y-4">
-            <div>
-              <label className="label">Meal Image URL</label>
-              <input className="text-input" value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} placeholder="https://..." />
-            </div>
-            <div>
-              <label className="label">Or Upload Photo</label>
-              <input className="text-input" type="file" accept="image/*" onChange={handleFile} />
-            </div>
-            <div>
-              <label className="label">Note</label>
-              <textarea className="textarea-input" rows="3" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Lunch at home, post-gym meal..." />
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+        <AppCard>
+          <SectionHeader
+            eyebrow="Add Food"
+            title="Meal details"
+            description="A cleaner invoice-like structure for meal logging."
+            actions={<Camera className="h-5 w-5 text-sky-500" />}
+          />
+          <div className="mt-5 space-y-5">
+            <div className="space-y-4 rounded-[26px] border border-slate-100 bg-slate-50/80 p-4">
               <div>
-                <label className="label">Food Name (Optional if Analyzing)</label>
-                <input className="text-input" value={manualFoodName} onChange={(event) => setManualFoodName(event.target.value)} placeholder="e.g. Chicken Salad" />
+                <label className="label">Meal Image URL</label>
+                <input className="text-input" value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} placeholder="https://..." />
               </div>
               <div>
-                <label className="label">Price</label>
-                <input className="text-input" type="number" value={manualPrice} onChange={(event) => setManualPrice(event.target.value)} placeholder="e.g. 15.00" />
-              </div>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="label">Log Date</label>
-                <input className="text-input" type="date" value={logDate} onChange={(event) => setLogDate(event.target.value)} />
+                <label className="label">Or Upload Photo</label>
+                <input className="text-input" type="file" accept="image/*" onChange={handleFile} />
               </div>
               <div>
-                <label className="label">Expense Category</label>
-                <select className="select-input" value={preferredCategory} onChange={(event) => setPreferredCategory(event.target.value)}>
-                  <option value="">No linked expense</option>
-                  {categories.map((category) => (
-                    <option key={category.name} value={category.name}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
+                <label className="label">Note</label>
+                <textarea className="textarea-input" rows="3" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Lunch at home, post-gym meal..." />
               </div>
             </div>
+
+            <div className="space-y-4 rounded-[26px] border border-slate-100 bg-white p-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="label">Food Name</label>
+                  <input className="text-input" value={manualFoodName} onChange={(event) => setManualFoodName(event.target.value)} placeholder="Chicken salad" />
+                </div>
+                <div>
+                  <label className="label">Price</label>
+                  <input className="text-input" type="number" value={manualPrice} onChange={(event) => setManualPrice(event.target.value)} placeholder="0" />
+                </div>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="label">Log Date</label>
+                  <input className="text-input" type="date" value={logDate} onChange={(event) => setLogDate(event.target.value)} />
+                </div>
+                <div>
+                  <label className="label">Expense Category</label>
+                  <select className="select-input" value={preferredCategory} onChange={(event) => setPreferredCategory(event.target.value)}>
+                    <option value="">No linked expense</option>
+                    {categories.map((category) => (
+                      <option key={category.name} value={category.name}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-[26px] border border-slate-100 bg-slate-900 p-4 text-white">
+              <div className="flex items-center justify-between text-sm text-slate-300">
+                <span>Monthly food cost</span>
+                <span className="text-xl font-bold text-white">{currency(monthlyFoodCost)}</span>
+              </div>
+            </div>
+
             <div className="grid gap-4 md:grid-cols-2">
               <Button variant="secondary" onClick={logManually} disabled={!manualFoodName || isSaving}>
                 {isSaving && !analysis ? "Saving..." : "Log Directly"}
@@ -197,43 +221,54 @@ export function FoodPage({ profile }) {
                 {isAnalyzing ? "Analyzing..." : "Analyze Meal"}
               </Button>
             </div>
-            {status ? <p className="text-sm text-cyan-100">{status}</p> : null}
+            {status ? <p className="text-sm text-sky-600">{status}</p> : null}
           </div>
-        </Card>
+        </AppCard>
 
         <div className="space-y-4">
-          <Card>
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="font-display text-2xl font-bold text-white">Analysis Result</h2>
-                <p className="text-sm text-muted">Gemini-powered estimate with a safe fallback if the API key is missing.</p>
-              </div>
-              {analysis ? (
-                <Button onClick={confirmLog} disabled={isSaving}>
-                  {isSaving ? "Saving..." : "Confirm & Log"}
-                </Button>
-              ) : null}
-            </div>
+          <AppCard>
+            <SectionHeader
+              eyebrow="Analysis"
+              title={analysis ? analysis.foodName : "Nutrition preview"}
+              description="Macros and cost from the current analysis."
+              actions={analysis ? <Button onClick={confirmLog} disabled={isSaving}>{isSaving ? "Saving..." : "Confirm & Log"}</Button> : null}
+            />
             {analysis ? (
               <div className="mt-5 grid gap-4 md:grid-cols-2">
-                <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
-                  <p className="text-sm text-slate-400">Meal</p>
-                  <h3 className="mt-2 font-display text-2xl font-bold text-white">{analysis.foodName}</h3>
-                  <p className="mt-3 text-sm text-slate-300">{analysis.note || "No note"}</p>
+                <div className="rounded-[26px] border border-slate-100 bg-slate-50 p-4">
+                  <p className="text-sm text-slate-500">Estimated cost</p>
+                  <p className="mt-2 text-xl font-bold text-slate-900">{currency(analysis.estimatedCost)}</p>
                   <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
-                    <div><span className="text-slate-500">Calories</span><p>{analysis.calories}</p></div>
-                    <div><span className="text-slate-500">Protein</span><p>{analysis.protein} g</p></div>
-                    <div><span className="text-slate-500">Carbs</span><p>{analysis.carbs} g</p></div>
-                    <div><span className="text-slate-500">Fat</span><p>{analysis.fat} g</p></div>
+                    <div><span className="text-slate-500">Calories</span><p className="mt-1 font-semibold text-slate-900">{analysis.calories}</p></div>
+                    <div><span className="text-slate-500">Protein</span><p className="mt-1 font-semibold text-slate-900">{analysis.protein} g</p></div>
+                    <div><span className="text-slate-500">Carbs</span><p className="mt-1 font-semibold text-slate-900">{analysis.carbs} g</p></div>
+                    <div><span className="text-slate-500">Fat</span><p className="mt-1 font-semibold text-slate-900">{analysis.fat} g</p></div>
                   </div>
-                  <p className="mt-4 font-semibold text-cyan-100">{currency(analysis.estimatedCost)}</p>
                 </div>
                 <MacroChart protein={analysis.protein} carbs={analysis.carbs} fat={analysis.fat} />
               </div>
             ) : (
-              <p className="mt-5 text-sm text-slate-400">Run an analysis to see calories, macros, and estimated cost.</p>
+              <p className="mt-5 text-sm text-slate-500">Run an analysis to see calories, macros, and estimated cost.</p>
             )}
-          </Card>
+          </AppCard>
+
+          <AppCard>
+            <SectionHeader eyebrow="History" title="Recent meals" description="Latest food logs this month." actions={<Salad className="h-5 w-5 text-sky-500" />} />
+            <div className="mt-5 space-y-3">
+              {logs?.length ? logs.slice(0, 5).map((entry) => (
+                <TransactionItem
+                  key={entry.id}
+                  title={entry.foodName}
+                  subtitle={`${entry.date} • ${entry.calories} kcal`}
+                  amount={entry.estimatedCost}
+                  icon="food"
+                  rightDetail={entry.note || "No note"}
+                />
+              )) : (
+                <p className="text-sm text-slate-500">Your meal log will appear here once you start tracking food.</p>
+              )}
+            </div>
+          </AppCard>
         </div>
       </div>
     </div>

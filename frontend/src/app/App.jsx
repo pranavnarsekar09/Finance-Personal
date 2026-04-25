@@ -16,8 +16,9 @@ import { ChatPage } from "../features/chat/ChatPage";
 import { BottomNav } from "../components/layout/BottomNav";
 import { DesktopNav } from "../components/layout/DesktopNav";
 import { ConnectionStatus } from "../components/layout/ConnectionStatus";
+import { ThemeToggle } from "../components/layout/ThemeToggle";
 
-function AppLayout({ profile, onProfileUpdate }) {
+function AppLayout({ profile, onProfileUpdate, theme, onToggleTheme }) {
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -42,15 +43,18 @@ function AppLayout({ profile, onProfileUpdate }) {
 
   const variants = {
     enter: (dir) => ({
-      x: dir > 0 ? "100%" : dir < 0 ? "-100%" : 0,
+      x: dir > 0 ? 28 : dir < 0 ? -28 : 0,
+      y: 10,
       opacity: 0,
     }),
     center: {
       x: 0,
+      y: 0,
       opacity: 1,
     },
     exit: (dir) => ({
-      x: dir > 0 ? "-100%" : dir < 0 ? "100%" : 0,
+      x: dir > 0 ? -28 : dir < 0 ? 28 : 0,
+      y: 10,
       opacity: 0,
     }),
   };
@@ -58,8 +62,9 @@ function AppLayout({ profile, onProfileUpdate }) {
   return (
     <>
       <ConnectionStatus />
+      <ThemeToggle theme={theme} onToggle={onToggleTheme} />
       <div className="page-shell overflow-x-hidden pb-32 md:pb-10">
-        <DesktopNav />
+        <DesktopNav theme={theme} onToggleTheme={onToggleTheme} />
         <motion.div 
           className="flex-1"
           drag="x"
@@ -80,8 +85,9 @@ function AppLayout({ profile, onProfileUpdate }) {
               animate="center"
               exit="exit"
               transition={{
-                x: { type: "tween", ease: "circOut", duration: 0.35 },
-                opacity: { duration: 0.2 }
+                x: { type: "tween", ease: "easeOut", duration: 0.22 },
+                y: { type: "tween", ease: "easeOut", duration: 0.22 },
+                opacity: { duration: 0.18 }
               }}
               className="w-full"
               style={{ willChange: "transform, opacity" }}
@@ -106,12 +112,24 @@ function AppLayout({ profile, onProfileUpdate }) {
 }
 
 export default function App() {
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === "undefined") {
+      return "light";
+    }
+    return window.localStorage.getItem("fintrack-theme") || "light";
+  });
   const { data: profile, loading, error, setData } = useAsync(() => api.getProfile(USER_ID), [], {
     initialData: null,
   });
 
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    document.documentElement.style.colorScheme = theme;
+    window.localStorage.setItem("fintrack-theme", theme);
+  }, [theme]);
+
   if (loading) {
-    return <div className="page-shell justify-center text-center text-slate-400">Loading FinTrack...</div>;
+    return <div className="page-shell justify-center text-center text-slate-500">Loading FinTrack...</div>;
   }
 
   if (error && /Profile not found/i.test(error.message)) {
@@ -119,12 +137,19 @@ export default function App() {
   }
 
   if (error) {
-    return <div className="page-shell justify-center text-center text-rose-300">{error.message}</div>;
+    return <div className="page-shell justify-center text-center text-rose-500">{error.message}</div>;
   }
 
   if (!profile?.onboardingComplete) {
     return <OnboardingWizard onComplete={setData} />;
   }
 
-  return <AppLayout profile={profile} onProfileUpdate={setData} />;
+  return (
+    <AppLayout
+      profile={profile}
+      onProfileUpdate={setData}
+      theme={theme}
+      onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+    />
+  );
 }

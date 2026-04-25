@@ -6,13 +6,13 @@ export function SavingsJar({ progress = 0, label = "Savings" }) {
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className="relative h-32 w-24 overflow-hidden rounded-b-[40px] rounded-t-xl border-4 border-white/20 bg-white/5 shadow-glass">
+      <div className="relative h-32 w-24 overflow-hidden rounded-b-[40px] rounded-t-xl border-4 border-slate-100 bg-slate-50 shadow-lg shadow-slate-900/5">
         {/* Liquid/Filling */}
         <motion.div
           initial={{ height: 0 }}
           animate={{ height: `${percentage}%` }}
           transition={{ duration: 1.5, ease: "easeOut" }}
-          className="absolute bottom-0 w-full bg-gradient-to-t from-cyan-500 to-cyan-300"
+          className="absolute bottom-0 w-full bg-gradient-to-t from-sky-500 to-cyan-300"
         >
           {/* Wave effect */}
           <motion.div
@@ -24,11 +24,11 @@ export function SavingsJar({ progress = 0, label = "Savings" }) {
         </motion.div>
         
         {/* Shine */}
-        <div className="absolute right-3 top-2 h-10 w-1 rounded-full bg-white/10" />
+        <div className="absolute right-3 top-2 h-10 w-1 rounded-full bg-white/50" />
       </div>
       <div className="text-center">
-        <p className="text-xs font-bold uppercase tracking-widest text-slate-400">{label}</p>
-        <p className="text-lg font-bold text-white">{Math.round(percentage)}%</p>
+        <p className="text-xs font-bold uppercase tracking-widest text-slate-500">{label}</p>
+        <p className="text-lg font-bold text-slate-900">{Math.round(percentage)}%</p>
       </div>
     </div>
   );

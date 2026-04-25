@@ -1,5 +1,6 @@
 import { memo } from "react";
+import { AppCard } from "../../ui/fintech";
 
-export const Card = memo(function Card({ children, className = "" }) {
-  return <div className={`glass rounded-[28px] p-5 ${className}`}>{children}</div>;
+export const Card = memo(function Card(props) {
+  return <AppCard {...props} />;
 });

@@ -70,7 +70,7 @@ export function ProfilePage({ profile, onProfileUpdate }) {
       <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
         <div className="space-y-4">
           <Card>
-            <h2 className="font-display text-2xl font-bold text-white">Profile Settings</h2>
+            <h2 className="text-2xl font-semibold text-slate-900">Profile Settings</h2>
             <form className="mt-5 space-y-4" onSubmit={submitProfile}>
               <input className="text-input" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Name" />
               <input className="text-input" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="Email" />
@@ -83,8 +83,8 @@ export function ProfilePage({ profile, onProfileUpdate }) {
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="font-display text-2xl font-bold text-white">Goals</h2>
-                <p className="text-sm text-muted">Savings and calorie goals</p>
+                <h2 className="text-2xl font-semibold text-slate-900">Goals</h2>
+                <p className="text-sm text-slate-500">Savings and calorie goals</p>
               </div>
             </div>
             <form className="mt-5 grid gap-3 md:grid-cols-2" onSubmit={addGoal}>
@@ -100,13 +100,13 @@ export function ProfilePage({ profile, onProfileUpdate }) {
 
             <div className="mt-5 space-y-4">
               {(goals || []).map((goal) => (
-                <div key={goal.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div key={goal.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="font-medium text-white">{goal.type}</span>
-                    <span className="text-sm text-slate-400">{goal.progress.toFixed(0)}%</span>
+                    <span className="font-medium text-slate-900">{goal.type}</span>
+                    <span className="text-sm text-slate-500">{goal.progress.toFixed(0)}%</span>
                   </div>
                   <ProgressBar value={goal.progress} total={100} tone="green" />
-                  <p className="mt-3 text-sm text-slate-400">
+                  <p className="mt-3 text-sm text-slate-500">
                     {currency(goal.currentAmount)} of {currency(goal.targetAmount)} • due {goal.deadline}
                   </p>
                 </div>
@@ -118,8 +118,8 @@ export function ProfilePage({ profile, onProfileUpdate }) {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-display text-2xl font-bold text-white">Manage Categories</h2>
-              <p className="text-sm text-muted">{currency(totalCategoryBudget)} allocated across your custom categories</p>
+              <h2 className="text-2xl font-semibold text-slate-900">Manage Categories</h2>
+              <p className="text-sm text-slate-500">{currency(totalCategoryBudget)} allocated across your custom categories</p>
             </div>
             <Button type="button" onClick={() => setCategories([...categories, { name: "", budget: 0 }])}>Add Category</Button>
           </div>

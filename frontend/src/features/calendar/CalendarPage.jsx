@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { Trash2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAsync } from "../../hooks/useAsync";
 import { api } from "../../lib/api";
 import { USER_ID } from "../../lib/constants";
@@ -6,8 +8,6 @@ import { buildCalendarGrid, currency, emitDataRefresh, monthKey, monthLabel, shi
 import { PageHeader } from "../../components/layout/PageHeader";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
-import { Trash2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 
 export function CalendarPage() {
   const [month, setMonth] = useState(monthKey());
@@ -34,13 +34,13 @@ export function CalendarPage() {
 
   const removeExpense = async (id) => {
     await api.deleteExpense(id);
-    setData(entries.map((entry) => (entry.date === selectedDate ? { ...entry, expenses: entry.expenses.filter((e) => e.id !== id), hasExpenses: entry.expenses.length > 1 } : entry)));
+    setData(entries.map((entry) => (entry.date === selectedDate ? { ...entry, expenses: entry.expenses.filter((expense) => expense.id !== id), hasExpenses: entry.expenses.length > 1 } : entry)));
     emitDataRefresh();
   };
 
   const removeMeal = async (id) => {
     await api.deleteFoodLog(id);
-    setData(entries.map((entry) => (entry.date === selectedDate ? { ...entry, meals: entry.meals.filter((m) => m.id !== id), hasMeals: entry.meals.length > 1 } : entry)));
+    setData(entries.map((entry) => (entry.date === selectedDate ? { ...entry, meals: entry.meals.filter((meal) => meal.id !== id), hasMeals: entry.meals.length > 1 } : entry)));
     emitDataRefresh();
   };
 
@@ -56,7 +56,7 @@ export function CalendarPage() {
         <Card>
           <div className="mb-4 flex items-center justify-between">
             <Button variant="secondary" onClick={() => setMonth((current) => shiftMonth(current, -1))}>Prev</Button>
-            <h2 className="font-display text-2xl font-bold text-white">{monthLabel(month)}</h2>
+            <h2 className="text-2xl font-semibold text-slate-900">{monthLabel(month)}</h2>
             <Button variant="secondary" onClick={() => setMonth((current) => shiftMonth(current, 1))}>Next</Button>
           </div>
           <div className="mb-3 grid grid-cols-7 gap-3 text-center text-[10px] uppercase tracking-[0.2em] text-slate-500 sm:text-xs">
@@ -73,14 +73,14 @@ export function CalendarPage() {
                   type="button"
                   disabled={!date}
                   onClick={() => date && setSelectedDate(date)}
-                  className={`calendar-day ${selectedDate === date ? "is-selected" : ""} ${!date ? "opacity-0 pointer-events-none" : ""}`}
+                  className={`calendar-day ${selectedDate === date ? "is-selected" : ""} ${!date ? "pointer-events-none opacity-0" : ""}`}
                 >
                   {date ? (
                     <>
-                      <p className="text-sm font-bold text-white sm:text-base">{Number(date.slice(-2))}</p>
+                      <p className="text-sm font-bold text-slate-900 sm:text-base">{Number(date.slice(-2))}</p>
                       <div className="mt-1 flex gap-0.5 sm:mt-2 sm:gap-1">
-                        {entry?.hasExpenses ? <span className="h-1 w-1 rounded-full bg-cyan-300 sm:h-1.5 sm:w-1.5" /> : null}
-                        {entry?.hasMeals ? <span className="h-1 w-1 rounded-full bg-emerald-300 sm:h-1.5 sm:w-1.5" /> : null}
+                        {entry?.hasExpenses ? <span className="h-1 w-1 rounded-full bg-sky-400 sm:h-1.5 sm:w-1.5" /> : null}
+                        {entry?.hasMeals ? <span className="h-1 w-1 rounded-full bg-emerald-400 sm:h-1.5 sm:w-1.5" /> : null}
                       </div>
                       <p className="mt-1 hidden text-[10px] text-slate-500 sm:block">
                         {entry?.expenses?.length || 0} exp • {entry?.meals?.length || 0} meals
@@ -96,8 +96,8 @@ export function CalendarPage() {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-display text-2xl font-bold text-white">{selectedDate || "Pick a date"}</h2>
-              <p className="text-sm text-muted">Daily transactions and meals.</p>
+              <h2 className="text-2xl font-semibold text-slate-900">{selectedDate || "Pick a date"}</h2>
+              <p className="text-sm text-slate-500">Daily transactions and meals.</p>
             </div>
           </div>
 
@@ -105,7 +105,7 @@ export function CalendarPage() {
             <div className="mt-5 space-y-5">
               <div>
                 <div className="mb-3 flex items-center justify-between">
-                  <h3 className="font-semibold text-white">Expenses</h3>
+                  <h3 className="font-semibold text-slate-900">Expenses</h3>
                 </div>
                 <div className="flex flex-col space-y-2">
                   <AnimatePresence>
@@ -117,12 +117,12 @@ export function CalendarPage() {
                         exit={{ opacity: 0, height: 0, overflow: "hidden" }}
                         transition={{ duration: 0.2 }}
                         key={entry.id}
-                        className="group flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-3 text-sm transition hover:bg-white/10"
+                        className="group flex w-full items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 p-3 text-sm transition hover:bg-slate-100"
                       >
                         <div>
                           {entry.categoryName} • {currency(entry.amount)} • {entry.paymentMethod}
                         </div>
-                        <button onClick={() => removeExpense(entry.id)} className="text-slate-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition">
+                        <button onClick={() => removeExpense(entry.id)} className="opacity-0 transition group-hover:opacity-100 text-slate-400 hover:text-red-400">
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </motion.div>
@@ -133,7 +133,7 @@ export function CalendarPage() {
 
               <div>
                 <div className="mb-3 flex items-center justify-between">
-                  <h3 className="font-semibold text-white">Meals</h3>
+                  <h3 className="font-semibold text-slate-900">Meals</h3>
                 </div>
                 <div className="flex flex-col space-y-2">
                   <AnimatePresence>
@@ -145,12 +145,12 @@ export function CalendarPage() {
                         exit={{ opacity: 0, height: 0, overflow: "hidden" }}
                         transition={{ duration: 0.2 }}
                         key={entry.id}
-                        className="group flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-3 text-sm transition hover:bg-white/10"
+                        className="group flex w-full items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 p-3 text-sm transition hover:bg-slate-100"
                       >
                         <div>
                           {entry.foodName} • {entry.calories} kcal • {currency(entry.estimatedCost)}
                         </div>
-                        <button onClick={() => removeMeal(entry.id)} className="text-slate-400 hover:text-red-400 opacity-0 group-hover:opacity-100 transition">
+                        <button onClick={() => removeMeal(entry.id)} className="opacity-0 transition group-hover:opacity-100 text-slate-400 hover:text-red-400">
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </motion.div>

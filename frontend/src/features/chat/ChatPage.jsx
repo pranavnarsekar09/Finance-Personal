@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Sparkles, User, Bot, Loader2 } from "lucide-react";
+import { Send, User, Bot, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../../lib/api";
 import { USER_ID } from "../../lib/constants";
@@ -55,16 +55,15 @@ export function ChatPage() {
   ];
 
   return (
-    <div className="page-shell flex flex-col h-[calc(100vh-12rem)] md:h-[calc(100vh-8rem)]">
+    <div className="page-shell flex h-[calc(100vh-12rem)] flex-col md:h-[calc(100vh-8rem)]">
       <PageHeader
         eyebrow="AI Assistant"
         title="Chat with your data."
         description="Ask anything about your spending, budget, or nutrition."
       />
 
-      <Card className="flex flex-col flex-1 mt-6 overflow-hidden border-white/10 bg-slate-900/50 backdrop-blur-xl">
-        {/* Messages area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
+      <Card className="mt-6 flex flex-1 flex-col overflow-hidden">
+        <div className="scrollbar-hide flex-1 space-y-4 overflow-y-auto p-4">
           <AnimatePresence initial={false}>
             {messages.map((msg, idx) => (
               <motion.div
@@ -74,74 +73,65 @@ export function ChatPage() {
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-3 flex gap-3 ${
+                  className={`flex max-w-[85%] gap-3 rounded-2xl px-4 py-3 ${
                     msg.role === "user"
-                      ? "bg-cyan-500/20 text-cyan-50 border border-cyan-500/30"
-                      : "bg-white/5 text-slate-200 border border-white/10"
+                      ? "border border-sky-200 bg-sky-500 text-white"
+                      : "border border-slate-100 bg-slate-50 text-slate-700"
                   }`}
                 >
-                  <div className="shrink-0 mt-1">
+                  <div className="mt-1 shrink-0">
                     {msg.role === "user" ? (
-                      <div className="bg-cyan-500/20 p-1 rounded-lg text-cyan-300">
+                      <div className="rounded-lg bg-white/20 p-1 text-white">
                         <User size={14} />
                       </div>
                     ) : (
-                      <div className="bg-white/10 p-1 rounded-lg text-white">
+                      <div className="rounded-lg bg-white p-1 text-slate-700">
                         <Bot size={14} />
                       </div>
                     )}
                   </div>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</p>
                 </div>
               </motion.div>
             ))}
           </AnimatePresence>
-          {isLoading && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex justify-start"
-            >
-              <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-slate-400">
+          {isLoading ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-slate-400">
                 <Loader2 size={18} className="animate-spin" />
               </div>
             </motion.div>
-          )}
+          ) : null}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Suggestions */}
-        {messages.length === 1 && (
-          <div className="px-4 pb-2 flex flex-wrap gap-2">
-            {suggestions.map((s) => (
+        {messages.length === 1 ? (
+          <div className="flex flex-wrap gap-2 px-4 pb-2">
+            {suggestions.map((suggestion) => (
               <button
-                key={s}
-                onClick={() => {
-                  setInput(s);
-                  // Trigger handleSend manually or just set input
-                }}
-                className="text-xs px-3 py-1.5 rounded-full border border-white/5 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
+                key={suggestion}
+                onClick={() => setInput(suggestion)}
+                className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900"
               >
-                {s}
+                {suggestion}
               </button>
             ))}
           </div>
-        )}
+        ) : null}
 
-        {/* Input area */}
-        <form onSubmit={handleSend} className="p-4 border-t border-white/10 bg-slate-900/80">
+        <form onSubmit={handleSend} className="border-t border-slate-100 bg-white p-4">
           <div className="relative flex items-center">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about your budget, spending..."
-              className="w-full bg-white/5 border border-white/10 rounded-2xl pl-4 pr-12 py-3 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-4 pr-12 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:outline-none focus:ring-4 focus:ring-sky-100"
             />
             <button
               type="submit"
               disabled={!input.trim() || isLoading}
-              className="absolute right-2 p-2 rounded-xl bg-cyan-500 text-white hover:bg-cyan-400 disabled:opacity-50 disabled:hover:bg-cyan-500 transition-colors shadow-lg shadow-cyan-500/20"
+              className="absolute right-2 rounded-xl bg-slate-900 p-2 text-white transition-colors hover:bg-slate-800 disabled:opacity-50 disabled:hover:bg-slate-900"
             >
               <Send size={16} />
             </button>

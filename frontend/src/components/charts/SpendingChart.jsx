@@ -6,13 +6,13 @@ export function SpendingChart({ data = [] }) {
     <div className="chart-wrap h-72">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data}>
-          <XAxis dataKey="categoryName" stroke="#6b7b8d" tickLine={false} axisLine={false} />
-          <YAxis stroke="#6b7b8d" tickFormatter={(value) => `₹${Math.round(value / 1000)}k`} tickLine={false} axisLine={false} />
+          <XAxis dataKey="categoryName" stroke="#64748b" tickLine={false} axisLine={false} />
+          <YAxis stroke="#64748b" tickFormatter={(value) => `Rs ${Math.round(value / 1000)}k`} tickLine={false} axisLine={false} />
           <Tooltip
-            contentStyle={{ background: "#101723", borderRadius: 18, border: "1px solid rgba(255,255,255,0.08)" }}
+            contentStyle={{ background: "#ffffff", borderRadius: 18, border: "1px solid #e2e8f0", boxShadow: "0 16px 32px rgba(15, 23, 42, 0.08)" }}
             formatter={(value) => currency(value)}
           />
-          <Bar dataKey="spent" fill="#22d3ee" radius={[8, 8, 0, 0]} />
+          <Bar dataKey="spent" fill="#0ea5e9" radius={[8, 8, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>

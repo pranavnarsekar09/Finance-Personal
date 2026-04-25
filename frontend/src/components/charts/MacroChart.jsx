@@ -1,6 +1,6 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
-const COLORS = ["#22d3ee", "#3bff9f", "#fb7185"];
+const COLORS = ["#0ea5e9", "#34d399", "#fb7185"];
 
 export function MacroChart({ protein = 0, carbs = 0, fat = 0 }) {
   const data = [
@@ -18,9 +18,7 @@ export function MacroChart({ protein = 0, carbs = 0, fat = 0 }) {
               <Cell key={entry.name} fill={COLORS[index]} />
             ))}
           </Pie>
-          <Tooltip
-            contentStyle={{ background: "#101723", borderRadius: 18, border: "1px solid rgba(255,255,255,0.08)" }}
-          />
+          <Tooltip contentStyle={{ background: "#ffffff", borderRadius: 18, border: "1px solid #e2e8f0", boxShadow: "0 16px 32px rgba(15, 23, 42, 0.08)" }} />
         </PieChart>
       </ResponsiveContainer>
     </div>

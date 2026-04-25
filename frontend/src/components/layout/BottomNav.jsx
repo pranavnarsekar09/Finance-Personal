@@ -1,12 +1,11 @@
-import { useRef, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import { motion } from "framer-motion";
 import { MOBILE_NAV_ITEMS } from "../../lib/constants";
-import { LayoutDashboard, Wallet, Utensils, History, Activity, MessageSquare, User } from "lucide-react";
+import { LayoutDashboard, Plus, Utensils, History, Activity, MessageSquare, User } from "lucide-react";
 
 const ICON_MAP = {
   "/": LayoutDashboard,
-  "/finance": Wallet,
+  "/finance": Plus,
   "/food": Utensils,
   "/calendar": History,
   "/activity": Activity,
@@ -15,44 +14,89 @@ const ICON_MAP = {
 };
 
 export function BottomNav() {
+  const financeItem = MOBILE_NAV_ITEMS.find((item) => item.to === "/finance");
+  const sideItems = MOBILE_NAV_ITEMS.filter((item) => item.to !== "/finance");
+  const leftItems = sideItems.slice(0, 3);
+  const rightItems = sideItems.slice(3);
+
   return (
-    <nav className="bottom-nav-container !max-w-none !gap-0 !p-1 !px-2 shadow-2xl shadow-cyan-900/20">
-      {MOBILE_NAV_ITEMS.map((item) => {
+    <nav className="bottom-nav-container">
+      <div className="flex flex-1 items-center justify-around">
+        {leftItems.map((item) => {
+          const Icon = ICON_MAP[item.to] || LayoutDashboard;
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              aria-label={item.label}
+              className={({ isActive }) =>
+                `bottom-nav-item relative ${isActive ? "is-active text-sky-600 dark:text-sky-300" : "text-slate-500 dark:text-slate-400"}`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  {isActive ? (
+                    <motion.div
+                      layoutId="active-nav-bg"
+                      className="absolute inset-1 z-0 rounded-2xl bg-sky-50 dark:bg-slate-800"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  ) : null}
+                  <div className="relative z-10 flex flex-col items-center justify-center gap-1">
+                    <Icon size={18} className="transition-all duration-300" />
+                    <span className="sr-only">{item.label}</span>
+                    <span className={`hidden text-[10px] font-semibold ${isActive ? "sm:block" : ""}`}>{item.label}</span>
+                  </div>
+                </>
+              )}
+            </NavLink>
+          );
+        })}
+      </div>
+      {financeItem ? (
+        <NavLink
+          key={financeItem.to}
+          to={financeItem.to}
+          aria-label="Add expense"
+          className="mx-2 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white shadow-xl shadow-slate-900/15 transition-transform hover:scale-[1.02] dark:bg-sky-500"
+        >
+          <div className="flex flex-col items-center justify-center">
+            <Plus size={20} />
+          </div>
+        </NavLink>
+      ) : null}
+      <div className="flex flex-1 items-center justify-around">
+        {rightItems.map((item) => {
         const Icon = ICON_MAP[item.to] || LayoutDashboard;
         return (
           <NavLink
             key={item.to}
             to={item.to}
+            aria-label={item.label}
             className={({ isActive }) =>
-              `relative flex h-12 flex-col items-center justify-center transition-all duration-300 overflow-hidden ${
-                isActive ? "is-active flex-[1.5] text-cyan-200" : "flex-1 text-slate-500"
-              }`
+              `bottom-nav-item relative ${isActive ? "is-active text-sky-600 dark:text-sky-300" : "text-slate-500 dark:text-slate-400"}`
             }
           >
             {({ isActive }) => (
               <>
-                {isActive && (
+                {isActive ? (
                   <motion.div
                     layoutId="active-nav-bg"
-                    className="absolute inset-x-1 inset-y-1 z-0 rounded-xl bg-cyan-400/10"
+                    className="absolute inset-1 z-0 rounded-2xl bg-sky-50 dark:bg-slate-800"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
-                )}
-                <div className="relative z-10 flex flex-col items-center justify-center gap-0">
-                  <Icon size={isActive ? 20 : 16} className="transition-all duration-300" />
-                  <span
-                    className={`whitespace-nowrap text-[8px] font-black uppercase tracking-tighter transition-all duration-300 ${
-                      isActive ? "scale-100 opacity-100 mt-0.5" : "scale-0 h-0 opacity-0"
-                    }`}
-                  >
-                    {item.label}
-                  </span>
+                ) : null}
+                <div className="relative z-10 flex flex-col items-center justify-center gap-1">
+                  <Icon size={18} className="transition-all duration-300" />
+                  <span className="sr-only">{item.label}</span>
+                  <span className={`hidden text-[10px] font-semibold ${isActive ? "sm:block" : ""}`}>{item.label}</span>
                 </div>
               </>
             )}
           </NavLink>
         );
       })}
+      </div>
     </nav>
   );
 }

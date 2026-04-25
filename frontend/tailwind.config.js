@@ -1,15 +1,16 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: "class",
   content: ["./index.html", "./src/**/*.{js,jsx}"],
   theme: {
     extend: {
       colors: {
-        shell: "#0f1117",
-        card: "rgba(21, 28, 43, 0.7)",
-        accent: "#22d3ee",
-        accent2: "#3bff9f",
-        ink: "#e5f4ff",
-        muted: "#8ca3b8",
+        shell: "#f5f7fb",
+        card: "#ffffff",
+        accent: "#0ea5e9",
+        accent2: "#34d399",
+        ink: "#0f172a",
+        muted: "#64748b",
       },
       fontFamily: {
         display: ["Syne", "sans-serif"],
@@ -20,7 +21,11 @@ export default {
       },
       backgroundImage: {
         aurora:
-          "radial-gradient(circle at top left, rgba(34, 211, 238, 0.15), transparent 30%), radial-gradient(circle at top right, rgba(59, 255, 159, 0.14), transparent 30%), linear-gradient(160deg, #0f1117 0%, #111827 55%, #09121c 100%)",
+          "radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 30%), radial-gradient(circle at top right, rgba(167, 243, 208, 0.22), transparent 32%), linear-gradient(180deg, #f8fbff 0%, #f5f7fb 45%, #eef4ff 100%)",
+        app:
+          "radial-gradient(circle at top left, rgba(125, 211, 252, 0.22), transparent 24%), radial-gradient(circle at top right, rgba(196, 181, 253, 0.16), transparent 26%), linear-gradient(180deg, #fbfdff 0%, #f5f7fb 55%, #eef3fb 100%)",
+        "dark-app":
+          "radial-gradient(circle at top left, rgba(14, 165, 233, 0.18), transparent 22%), radial-gradient(circle at top right, rgba(99, 102, 241, 0.15), transparent 24%), linear-gradient(180deg, #020617 0%, #0f172a 55%, #111827 100%)",
       },
     },
   },

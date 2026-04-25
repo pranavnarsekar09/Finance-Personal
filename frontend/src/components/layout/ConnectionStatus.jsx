@@ -81,7 +81,7 @@ export function ConnectionStatus() {
         
         {/* Tooltip - Now appears below the dot since dot is at the top */}
         <div className="pointer-events-none absolute top-full right-0 mt-3 translate-y-[-8px] opacity-0 transition-all duration-200 group-hover:translate-y-0 group-hover:opacity-100">
-          <div className="whitespace-nowrap rounded-xl bg-slate-900/95 px-4 py-2 text-xs font-medium text-white shadow-2xl border border-white/10 backdrop-blur-sm">
+          <div className="whitespace-nowrap rounded-xl border border-white/10 bg-slate-900/95 px-4 py-2 text-xs font-medium text-white shadow-2xl backdrop-blur-sm dark:border-slate-700 dark:bg-slate-950/95">
             <div className="flex flex-col gap-1">
               <span className="font-bold">{current.text}</span>
               {lastCheck && (

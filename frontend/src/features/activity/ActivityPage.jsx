@@ -1,12 +1,10 @@
 import { useMemo, useState } from "react";
+import { Search } from "lucide-react";
 import { useAsync } from "../../hooks/useAsync";
 import { api } from "../../lib/api";
 import { USER_ID } from "../../lib/constants";
-import { currency, monthKey, shortDate, haptic } from "../../lib/utils";
-import { PageHeader } from "../../components/layout/PageHeader";
-import { Card } from "../../components/ui/Card";
-import { Button } from "../../components/ui/Button";
-import { Search, Filter, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { monthKey, haptic } from "../../lib/utils";
+import { AppCard, PillTabs, SectionHeader, TransactionItem } from "../../ui/fintech";
 
 export function ActivityPage({ profile }) {
   const [month] = useState(monthKey());
@@ -16,29 +14,28 @@ export function ActivityPage({ profile }) {
   const { data: logs, loading: loadingLogs } = useAsync(() => api.getFoodLogs(USER_ID, month), [month]);
 
   const categories = useMemo(() => {
-    if (!profile?.categories) return ["All"];
-    return ["All", ...profile.categories.map(c => c.name)];
+    if (!profile?.categories) return [{ label: "All", value: "All" }];
+    return [{ label: "All", value: "All" }, ...profile.categories.map((category) => ({ label: category.name, value: category.name }))];
   }, [profile]);
 
   const activities = useMemo(() => {
-    const allExpenses = (expenses || []).map(e => ({ ...e, type: 'expense' }));
-    const allFood = (logs || []).map(l => ({
-      ...l,
-      type: 'food',
-      amount: l.estimatedCost,
-      categoryName: 'Food'
+    const allExpenses = (expenses || []).map((entry) => ({ ...entry, kind: "expense" }));
+    const allFood = (logs || []).map((entry) => ({
+      ...entry,
+      kind: "food",
+      amount: entry.estimatedCost,
+      categoryName: "Food",
+      paymentMethod: "Meal log",
     }));
 
     let combined = [...allExpenses, ...allFood].sort((a, b) => {
-      // Primary sort: Date
       const dateDiff = new Date(b.date) - new Date(a.date);
       if (dateDiff !== 0) return dateDiff;
-      // Secondary sort: CreatedAt (if available)
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
 
     if (selectedCategory !== "All") {
-      combined = combined.filter(item => item.categoryName === selectedCategory);
+      combined = combined.filter((item) => item.categoryName === selectedCategory);
     }
 
     return combined;
@@ -48,67 +45,50 @@ export function ActivityPage({ profile }) {
 
   return (
     <div className="page-shell">
-      <PageHeader
-        eyebrow="Activity"
-        title="Your financial heartbeat."
-        description="Every transaction and meal logged, organized by time."
-      />
-
-      {/* Category Filters */}
-      <div className="no-scrollbar mb-6 flex gap-2 overflow-x-auto pb-2">
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => {
-              haptic(5);
-              setSelectedCategory(cat);
-            }}
-            className={`whitespace-nowrap rounded-full px-5 py-2 text-xs font-bold transition-all ${selectedCategory === cat
-                ? "bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-400/20"
-                : "bg-white/5 text-slate-400 hover:bg-white/10"
-              }`}
-          >
-            {cat}
-          </button>
-        ))}
+      <div className="mb-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-500">Activity</p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">Your financial heartbeat</h1>
+        <p className="mt-2 text-sm text-slate-500">Expenses and meal logs, organized into one cleaner timeline.</p>
       </div>
 
-      <div className="mb-6 flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+      <AppCard className="mb-4">
+        <SectionHeader eyebrow="Filters" title="Focus the feed" description="Switch categories without leaving the timeline." />
+        <div className="mt-4 overflow-x-auto">
+          <PillTabs
+            items={categories}
+            value={selectedCategory}
+            onChange={(value) => {
+              haptic(5);
+              setSelectedCategory(value);
+            }}
+          />
+        </div>
+        <div className="relative mt-4">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder={`Search ${selectedCategory === "All" ? "all" : selectedCategory}...`}
+            placeholder={`Search ${selectedCategory === "All" ? "all activity" : selectedCategory}...`}
             className="text-input pl-10"
           />
         </div>
-      </div>
+      </AppCard>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {loading ? (
-          <p className="py-10 text-center text-slate-500">Loading activity...</p>
+          <AppCard><p className="py-10 text-center text-slate-500">Loading activity...</p></AppCard>
         ) : activities.length ? (
           activities.map((item) => (
-            <Card key={item.id} className="flex items-center justify-between p-4 transition-all hover:bg-white/5">
-              <div className="flex items-center gap-4">
-                <div className={`rounded-full p-2 ${item.amount > 0 ? "bg-rose-500/10 text-rose-400" : "bg-emerald-500/10 text-emerald-400"}`}>
-                  <ArrowUpRight size={20} />
-                </div>
-                <div>
-                  <p className="font-bold text-white">{item.categoryName}</p>
-                  <p className="text-xs text-slate-500">{shortDate(item.date)} • {item.paymentMethod}</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-lg font-bold text-white">{currency(item.amount)}</p>
-                <p className="text-[10px] uppercase tracking-widest text-slate-500">{item.note || "No note"}</p>
-              </div>
-            </Card>
+            <TransactionItem
+              key={`${item.kind}-${item.id}`}
+              title={item.kind === "food" ? item.foodName : item.categoryName}
+              subtitle={`${item.date} • ${item.kind === "food" ? `${item.calories} kcal` : item.paymentMethod}`}
+              amount={item.amount}
+              icon={item.kind === "food" ? "food" : "wallet"}
+              rightDetail={item.note || "No note"}
+            />
           ))
         ) : (
-          <Card className="py-20 text-center">
-            <p className="text-slate-500">No activity found for this period.</p>
-          </Card>
+          <AppCard><p className="py-10 text-center text-slate-500">No activity found for this period.</p></AppCard>
         )}
       </div>
     </div>
