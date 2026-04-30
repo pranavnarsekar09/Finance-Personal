@@ -10,6 +10,7 @@ public interface ExpenseRepository extends MongoRepository<Expense, String> {
 
     List<Expense> findByUserIdAndDateBetween(String userId, LocalDate startDate, LocalDate endDate);
 
+    @org.springframework.data.mongodb.repository.Query("{'userId': ?0, 'date': { $gte: ?1, $lt: ?2 }}")
     List<Expense> findByUserIdAndDateGreaterThanEqualAndDateLessThan(String userId, LocalDate startDate, LocalDate endDate);
 
     List<Expense> findByUserIdAndDate(String userId, LocalDate date);

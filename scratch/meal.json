@@ -1,0 +1,11 @@
+{
+  "userId": "demo-user",
+  "foodName": "Test Meal 30th",
+  "calories": 500,
+  "protein": 20,
+  "carbs": 50,
+  "fat": 10,
+  "estimatedCost": 150,
+  "date": "2026-04-30",
+  "note": "Testing bug"
+}

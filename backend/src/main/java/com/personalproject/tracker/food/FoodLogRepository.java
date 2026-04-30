@@ -10,6 +10,7 @@ public interface FoodLogRepository extends MongoRepository<FoodLog, String> {
 
     List<FoodLog> findByUserIdAndDateBetween(String userId, LocalDate startDate, LocalDate endDate);
 
+    @org.springframework.data.mongodb.repository.Query("{'userId': ?0, 'date': { $gte: ?1, $lt: ?2 }}")
     List<FoodLog> findByUserIdAndDateGreaterThanEqualAndDateLessThan(String userId, LocalDate startDate, LocalDate endDate);
 
     List<FoodLog> findByUserIdAndDate(String userId, LocalDate date);
