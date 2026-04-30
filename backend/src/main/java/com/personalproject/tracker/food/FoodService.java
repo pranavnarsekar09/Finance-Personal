@@ -107,7 +107,7 @@ public class FoodService {
 
     public List<FoodLogResponse> getLogs(String userId, String month) {
         MonthRange range = DateRangeUtils.parseMonth(month);
-        return foodLogRepository.findByUserIdAndDateBetween(requireUserId(userId), range.start(), range.endExclusive().minusDays(1))
+        return foodLogRepository.findByUserIdAndDateGreaterThanEqualAndDateLessThan(requireUserId(userId), range.start(), range.endExclusive())
                 .stream()
                 .sorted(Comparator.comparing(FoodLog::getDate).reversed().thenComparing(FoodLog::getCreatedAt).reversed())
                 .map(this::toResponse)

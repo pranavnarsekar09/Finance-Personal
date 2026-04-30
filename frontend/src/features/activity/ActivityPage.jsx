@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { useAsync } from "../../hooks/useAsync";
 import { api } from "../../lib/api";
@@ -10,8 +10,17 @@ export function ActivityPage({ profile }) {
   const [month] = useState(monthKey());
   const [selectedCategory, setSelectedCategory] = useState("All");
 
-  const { data: expenses, loading: loadingExpenses } = useAsync(() => api.getExpenses(USER_ID, month), [month]);
-  const { data: logs, loading: loadingLogs } = useAsync(() => api.getFoodLogs(USER_ID, month), [month]);
+  const { data: expenses, loading: loadingExpenses, execute: reloadExpenses } = useAsync(() => api.getExpenses(USER_ID, month), [month]);
+  const { data: logs, loading: loadingLogs, execute: reloadLogs } = useAsync(() => api.getFoodLogs(USER_ID, month), [month]);
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      reloadExpenses().catch(() => undefined);
+      reloadLogs().catch(() => undefined);
+    };
+    window.addEventListener("fintrack:data-updated", handleRefresh);
+    return () => window.removeEventListener("fintrack:data-updated", handleRefresh);
+  }, [reloadExpenses, reloadLogs]);
 
   const categories = useMemo(() => {
     if (!profile?.categories) return [{ label: "All", value: "All" }];

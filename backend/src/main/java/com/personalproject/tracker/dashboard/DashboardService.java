@@ -42,12 +42,12 @@ public class DashboardService {
                 .orElseThrow(() -> new IllegalArgumentException("Profile not found for userId: " + userId));
 
         List<com.personalproject.tracker.expense.Expense> expenses =
-                expenseRepository.findByUserIdAndDateBetween(userId, range.start(), range.endExclusive().minusDays(1)).stream()
+                expenseRepository.findByUserIdAndDateGreaterThanEqualAndDateLessThan(userId, range.start(), range.endExclusive()).stream()
                         .sorted(Comparator.comparing(com.personalproject.tracker.expense.Expense::getDate).reversed()
                                 .thenComparing(com.personalproject.tracker.expense.Expense::getCreatedAt).reversed())
                         .toList();
         List<com.personalproject.tracker.food.FoodLog> foodLogs =
-                foodLogRepository.findByUserIdAndDateBetween(userId, range.start(), range.endExclusive().minusDays(1)).stream()
+                foodLogRepository.findByUserIdAndDateGreaterThanEqualAndDateLessThan(userId, range.start(), range.endExclusive()).stream()
                         .sorted(Comparator.comparing(com.personalproject.tracker.food.FoodLog::getDate).reversed()
                                 .thenComparing(com.personalproject.tracker.food.FoodLog::getCreatedAt).reversed())
                         .toList();

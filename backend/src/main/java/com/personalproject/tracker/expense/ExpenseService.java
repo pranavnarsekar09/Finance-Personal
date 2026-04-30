@@ -58,7 +58,7 @@ public class ExpenseService {
 
     public List<ExpenseResponse> getExpenses(String userId, String month) {
         MonthRange range = DateRangeUtils.parseMonth(month);
-        return expenseRepository.findByUserIdAndDateBetween(requireUserId(userId), range.start(), range.endExclusive().minusDays(1))
+        return expenseRepository.findByUserIdAndDateGreaterThanEqualAndDateLessThan(requireUserId(userId), range.start(), range.endExclusive())
                 .stream()
                 .sorted(Comparator.comparing(Expense::getDate).reversed().thenComparing(Expense::getCreatedAt).reversed())
                 .map(this::toResponse)

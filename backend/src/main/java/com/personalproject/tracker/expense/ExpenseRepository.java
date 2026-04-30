@@ -10,6 +10,8 @@ public interface ExpenseRepository extends MongoRepository<Expense, String> {
 
     List<Expense> findByUserIdAndDateBetween(String userId, LocalDate startDate, LocalDate endDate);
 
+    List<Expense> findByUserIdAndDateGreaterThanEqualAndDateLessThan(String userId, LocalDate startDate, LocalDate endDate);
+
     List<Expense> findByUserIdAndDate(String userId, LocalDate date);
 
     void deleteByUserIdAndDate(String userId, LocalDate date);

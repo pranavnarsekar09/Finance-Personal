@@ -10,6 +10,8 @@ public interface FoodLogRepository extends MongoRepository<FoodLog, String> {
 
     List<FoodLog> findByUserIdAndDateBetween(String userId, LocalDate startDate, LocalDate endDate);
 
+    List<FoodLog> findByUserIdAndDateGreaterThanEqualAndDateLessThan(String userId, LocalDate startDate, LocalDate endDate);
+
     List<FoodLog> findByUserIdAndDate(String userId, LocalDate date);
 
     void deleteByUserIdAndDate(String userId, LocalDate date);
