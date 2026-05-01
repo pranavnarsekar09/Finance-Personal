@@ -16,7 +16,6 @@ import { ChatPage } from "../features/chat/ChatPage";
 import { BottomNav } from "../components/layout/BottomNav";
 import { DesktopNav } from "../components/layout/DesktopNav";
 import { ConnectionStatus } from "../components/layout/ConnectionStatus";
-import { ThemeToggle } from "../components/layout/ThemeToggle";
 
 function AppLayout({ profile, onProfileUpdate, theme, onToggleTheme }) {
   const location = useLocation();
@@ -62,7 +61,6 @@ function AppLayout({ profile, onProfileUpdate, theme, onToggleTheme }) {
   return (
     <>
       <ConnectionStatus />
-      <ThemeToggle theme={theme} onToggle={onToggleTheme} />
       <div className="page-shell overflow-x-hidden pb-32 md:pb-10">
         <DesktopNav theme={theme} onToggleTheme={onToggleTheme} />
         <motion.div 
@@ -99,7 +97,7 @@ function AppLayout({ profile, onProfileUpdate, theme, onToggleTheme }) {
                 <Route path="/calendar" element={<CalendarPage profile={profile} />} />
                 <Route path="/activity" element={<ActivityPage profile={profile} />} />
                 <Route path="/chat" element={<ChatPage profile={profile} />} />
-                <Route path="/profile" element={<ProfilePage profile={profile} onProfileUpdate={onProfileUpdate} />} />
+                <Route path="/profile" element={<ProfilePage profile={profile} onProfileUpdate={onProfileUpdate} theme={theme} onToggleTheme={onToggleTheme} />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </motion.div>

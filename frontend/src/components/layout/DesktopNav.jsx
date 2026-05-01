@@ -1,5 +1,4 @@
 import { NavLink } from "react-router-dom";
-import { Moon, Sun } from "lucide-react";
 import { MOBILE_NAV_ITEMS } from "../../lib/constants";
 
 export function DesktopNav({ theme = "light", onToggleTheme }) {
@@ -23,14 +22,6 @@ export function DesktopNav({ theme = "light", onToggleTheme }) {
             {item.label}
           </NavLink>
         ))}
-        <button
-          type="button"
-          onClick={onToggleTheme}
-          className="ml-2 flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
-          aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-        >
-          {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-        </button>
       </div>
     </div>
   );
