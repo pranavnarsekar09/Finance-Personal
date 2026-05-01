@@ -51,7 +51,9 @@ public class InsightService {
         int dayOfMonth = Math.max(1, LocalDate.now().getDayOfMonth());
         double avgDailySpend = totalSpent / dayOfMonth;
         double remaining = Math.max(0, profile.getMonthlyBudget() - totalSpent);
-        double runway = avgDailySpend == 0 ? remaining : remaining / avgDailySpend;
+        int daysInMonth = month.lengthOfMonth();
+        int daysLeft = daysInMonth - dayOfMonth + 1;
+        double runway = avgDailySpend == 0 ? daysLeft : Math.min(daysLeft * 2, remaining / avgDailySpend);
 
         Map<String, Double> byCategory = expenses.stream().collect(Collectors.groupingBy(
                 (Expense expense) -> expense.getCategoryName().trim(),
@@ -61,11 +63,12 @@ public class InsightService {
         String topCategory = byCategory.entrySet().stream()
                 .max(Comparator.comparing(Map.Entry::getValue))
                 .map(Map.Entry::getKey)
-                .orElse("No category yet");
+                .orElse("No expenses yet");
 
         // Create a cache key based on the data that influences the prompt
-        String cacheKey = String.format("%.2f|%.2f|%.2f|%.2f|%.1f|%s", 
-                profile.getMonthlyBudget(), totalSpent, remaining, avgDailySpend, runway, topCategory);
+        // Added year-month to ensure insights refresh when the month changes
+        String cacheKey = String.format("%s|%.2f|%.2f|%.2f|%.2f|%.1f|%s", 
+                month.toString(), profile.getMonthlyBudget(), totalSpent, remaining, avgDailySpend, runway, topCategory);
 
         InsightCacheEntry cached = insightCache.get(userId);
         if (cached != null && cached.cacheKey().equals(cacheKey)) {
@@ -78,7 +81,7 @@ public class InsightService {
                 : "You are tracking within budget so far. Your current pace suggests you can stretch the remaining budget for the rest of the month.";
 
         String prompt = """
-                Act as a personal finance AI. I am a user tracking my monthly budget.
+                Act as a personal finance AI. I am %s, tracking my monthly budget for %s %d.
                 My total monthly budget is %.2f.
                 I have spent %.2f so far this month.
                 My remaining budget is %.2f.
@@ -87,11 +90,22 @@ public class InsightService {
                 My top spending category is "%s".
 
                 Provide a highly concise, 1-2 sentence friendly insight on my financial health this month.
+                Since it might be the start of the month, be encouraging.
                 Return ONLY a valid JSON object with EXACTLY two fields:
                 1. "headline": A very short, catchy title (2-4 words maximum, e.g. "Great Pace!", "Watch Out!", "Steady Spending").
                 2. "summary": The 1-2 sentence friendly insight.
                 No markdown, no extra text.
-                """.formatted(profile.getMonthlyBudget(), totalSpent, remaining, avgDailySpend, runway, topCategory);
+                """.formatted(
+                        profile.getName(), 
+                        month.getMonth().name(), 
+                        month.getYear(),
+                        profile.getMonthlyBudget(), 
+                        totalSpent, 
+                        remaining, 
+                        avgDailySpend, 
+                        runway, 
+                        topCategory
+                );
 
         try {
             String geminiResponse = geminiClient.generateInsight(prompt);

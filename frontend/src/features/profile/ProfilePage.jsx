@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useAsync } from "../../hooks/useAsync";
 import { api } from "../../lib/api";
 import { USER_ID } from "../../lib/constants";
-import { currency } from "../../lib/utils";
+import { currency, emitDataRefresh } from "../../lib/utils";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { Button } from "../../components/ui/Button";
 import { Card } from "../../components/ui/Card";
@@ -34,11 +34,13 @@ export function ProfilePage({ profile, onProfileUpdate }) {
       categories,
     });
     onProfileUpdate(updated);
+    emitDataRefresh();
   };
 
   const saveCategories = async () => {
     const updated = await api.saveCategories(USER_ID, { categories });
     onProfileUpdate(updated);
+    emitDataRefresh();
   };
 
   const addGoal = async (event) => {
