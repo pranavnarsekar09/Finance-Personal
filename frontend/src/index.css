@@ -1,0 +1,143 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* FinTrack — sage/cream premium palette inspired by Zeni */
+    --background: 80 25% 96%;
+    --foreground: 160 25% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 160 25% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 160 25% 10%;
+
+    --primary: 160 35% 18%;
+    --primary-foreground: 80 30% 95%;
+
+    --secondary: 80 20% 92%;
+    --secondary-foreground: 160 25% 15%;
+
+    --muted: 80 15% 90%;
+    --muted-foreground: 160 10% 40%;
+
+    --accent: 140 30% 75%;
+    --accent-foreground: 160 35% 15%;
+
+    --destructive: 8 75% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 80 15% 88%;
+    --input: 80 15% 88%;
+    --ring: 160 35% 25%;
+
+    --radius: 1.25rem;
+
+    /* Pastel accents */
+    --mint: 145 45% 70%;
+    --coral: 8 80% 72%;
+    --sun: 42 90% 70%;
+    --sky: 200 70% 75%;
+    --lavender: 260 50% 80%;
+
+    /* Surfaces & gradients */
+    --surface-dark: 165 30% 14%;
+    --surface-dark-foreground: 80 25% 92%;
+    --gradient-cream: linear-gradient(180deg, hsl(80 30% 96%) 0%, hsl(60 35% 90%) 100%);
+    --gradient-sage: linear-gradient(135deg, hsl(160 30% 22%) 0%, hsl(165 35% 14%) 100%);
+    --gradient-mint: linear-gradient(135deg, hsl(145 45% 80%) 0%, hsl(160 40% 65%) 100%);
+
+    --shadow-soft: 0 4px 24px -8px hsl(160 30% 20% / 0.12);
+    --shadow-float: 0 20px 50px -20px hsl(160 30% 20% / 0.25);
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 165 25% 8%;
+    --foreground: 80 25% 92%;
+    --card: 165 25% 12%;
+    --card-foreground: 80 25% 92%;
+    --popover: 165 25% 12%;
+    --popover-foreground: 80 25% 92%;
+    --primary: 145 45% 70%;
+    --primary-foreground: 165 30% 10%;
+    --secondary: 165 20% 16%;
+    --secondary-foreground: 80 25% 92%;
+    --muted: 165 20% 16%;
+    --muted-foreground: 80 10% 65%;
+    --accent: 145 35% 30%;
+    --accent-foreground: 80 25% 92%;
+    --destructive: 8 75% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 165 20% 18%;
+    --input: 165 20% 18%;
+    --ring: 145 45% 70%;
+    --gradient-cream: linear-gradient(180deg, hsl(165 25% 12%) 0%, hsl(165 30% 8%) 100%);
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-feature-settings: "ss01", "cv11";
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
+    font-optical-sizing: auto;
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer utilities {
+  .shadow-soft { box-shadow: var(--shadow-soft); }
+  .shadow-float { box-shadow: var(--shadow-float); }
+  .bg-gradient-cream { background: var(--gradient-cream); }
+  .bg-gradient-sage { background: var(--gradient-sage); }
+  .bg-gradient-mint { background: var(--gradient-mint); }
+  .bg-surface-dark { background: hsl(var(--surface-dark)); color: hsl(var(--surface-dark-foreground)); }
+  .text-mint { color: hsl(var(--mint)); }
+  .bg-mint { background-color: hsl(var(--mint)); }
+  .bg-coral { background-color: hsl(var(--coral)); }
+  .bg-sun { background-color: hsl(var(--sun)); }
+  .bg-sky-pastel { background-color: hsl(var(--sky)); }
+  .bg-lavender { background-color: hsl(var(--lavender)); }
+  .grain {
+    background-image: radial-gradient(hsl(160 30% 20% / 0.04) 1px, transparent 1px);
+    background-size: 3px 3px;
+  }
+}

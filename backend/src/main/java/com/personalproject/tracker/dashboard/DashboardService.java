@@ -39,17 +39,28 @@ public class DashboardService {
         LocalDate today = todayStr != null ? DateRangeUtils.parseDate(todayStr) : LocalDate.now();
         
         UserProfile profile = profileRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Profile not found for userId: " + userId));
+                .orElseGet(() -> {
+                    UserProfile p = new UserProfile();
+                    p.setUserId(userId);
+                    p.setName("User");
+                    p.setMonthlyBudget(5000.0);
+                    p.setCalorieGoal(2000.0);
+                    p.setCategories(new java.util.ArrayList<>());
+                    return p;
+                });
+
+        double monthlyBudget = profile.getMonthlyBudget() != null ? profile.getMonthlyBudget() : 5000.0;
+        double calorieGoal = profile.getCalorieGoal() != null ? profile.getCalorieGoal() : 2000.0;
 
         List<com.personalproject.tracker.expense.Expense> expenses =
                 expenseRepository.findByUserIdAndDateGreaterThanEqualAndDateLessThan(userId, range.start(), range.endExclusive()).stream()
-                        .sorted(Comparator.comparing(com.personalproject.tracker.expense.Expense::getDate).reversed()
-                                .thenComparing(com.personalproject.tracker.expense.Expense::getCreatedAt).reversed())
+                        .sorted(Comparator.comparing(com.personalproject.tracker.expense.Expense::getDate, Comparator.nullsLast(Comparator.reverseOrder()))
+                                .thenComparing(com.personalproject.tracker.expense.Expense::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                         .toList();
         List<com.personalproject.tracker.food.FoodLog> foodLogs =
                 foodLogRepository.findByUserIdAndDateGreaterThanEqualAndDateLessThan(userId, range.start(), range.endExclusive()).stream()
-                        .sorted(Comparator.comparing(com.personalproject.tracker.food.FoodLog::getDate).reversed()
-                                .thenComparing(com.personalproject.tracker.food.FoodLog::getCreatedAt).reversed())
+                        .sorted(Comparator.comparing(com.personalproject.tracker.food.FoodLog::getDate, Comparator.nullsLast(Comparator.reverseOrder()))
+                                .thenComparing(com.personalproject.tracker.food.FoodLog::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                         .toList();
 
         double totalSpent = expenses.stream().mapToDouble(com.personalproject.tracker.expense.Expense::getAmount).sum();
@@ -123,10 +134,10 @@ public class DashboardService {
 
         return new DashboardSummaryResponse(
                 userId,
-                profile.getMonthlyBudget(),
+                monthlyBudget,
                 totalSpent,
-                profile.getMonthlyBudget() - totalSpent,
-                profile.getCalorieGoal(),
+                monthlyBudget - totalSpent,
+                calorieGoal,
                 caloriesToday,
                 categorySpending,
                 recentTransactions,

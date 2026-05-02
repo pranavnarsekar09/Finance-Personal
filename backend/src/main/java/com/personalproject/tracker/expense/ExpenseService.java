@@ -60,7 +60,8 @@ public class ExpenseService {
         MonthRange range = DateRangeUtils.parseMonth(month);
         return expenseRepository.findByUserIdAndDateGreaterThanEqualAndDateLessThan(requireUserId(userId), range.start(), range.endExclusive())
                 .stream()
-                .sorted(Comparator.comparing(Expense::getDate).reversed().thenComparing(Expense::getCreatedAt).reversed())
+                .sorted(Comparator.comparing(Expense::getDate, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(Expense::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .map(this::toResponse)
                 .toList();
     }
@@ -68,7 +69,7 @@ public class ExpenseService {
     public List<ExpenseResponse> getExpensesForDate(String userId, LocalDate date) {
         return expenseRepository.findByUserIdAndDate(requireUserId(userId), date)
                 .stream()
-                .sorted(Comparator.comparing(Expense::getCreatedAt).reversed())
+                .sorted(Comparator.comparing(Expense::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .map(this::toResponse)
                 .toList();
     }
