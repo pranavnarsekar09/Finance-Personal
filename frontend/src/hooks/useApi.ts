@@ -12,27 +12,38 @@ import type {
 } from "@/lib/types";
 import { format, subMonths } from "date-fns";
 
-export function useProfile(userId: string = DEFAULT_USER_ID) {
+const CRITICAL_QUERY_OPTIONS = {
+  retry: 0,
+  refetchOnWindowFocus: false as const,
+};
+
+export function useProfile(userId: string = DEFAULT_USER_ID, enabled: boolean = true) {
   return useQuery({
     queryKey: ["profile", userId],
     queryFn: () => api.getProfile(userId),
+    enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    ...CRITICAL_QUERY_OPTIONS,
   });
 }
 
-export function useDashboard(userId: string = DEFAULT_USER_ID, month: string, today?: string) {
+export function useDashboard(userId: string = DEFAULT_USER_ID, month: string, today?: string, enabled: boolean = true) {
   return useQuery({
     queryKey: ["dashboard", userId, month, today],
     queryFn: () => api.getDashboard(userId, month, today),
+    enabled,
     staleTime: 1 * 60 * 1000, // 1 minute
+    ...CRITICAL_QUERY_OPTIONS,
   });
 }
 
-export function useFinance(userId: string = DEFAULT_USER_ID) {
+export function useFinance(userId: string = DEFAULT_USER_ID, enabled: boolean = true) {
   return useQuery({
     queryKey: ["finance", userId],
     queryFn: () => api.getFinance(userId),
+    enabled,
     staleTime: 1 * 60 * 1000,
+    ...CRITICAL_QUERY_OPTIONS,
   });
 }
 
@@ -52,21 +63,26 @@ export function useFoodLogs(userId: string = DEFAULT_USER_ID, month: string) {
   });
 }
 
-export function useGoals(userId: string = DEFAULT_USER_ID) {
+export function useGoals(userId: string = DEFAULT_USER_ID, enabled: boolean = true) {
   return useQuery({
     queryKey: ["goals", userId],
     queryFn: () => api.getGoals(userId),
+    enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    ...CRITICAL_QUERY_OPTIONS,
   });
 }
 
-export function useExpenseTrend(userId: string = DEFAULT_USER_ID) {
+export function useExpenseTrend(userId: string = DEFAULT_USER_ID, enabled: boolean = true) {
   const months = Array.from({ length: 12 }, (_, index) => format(subMonths(new Date(), 11 - index), "yyyy-MM"));
   const queries = useQueries({
     queries: months.map((month) => ({
       queryKey: ["expenses", "trend", userId, month],
       queryFn: () => api.getExpenses(userId, month),
+      enabled,
       staleTime: 5 * 60 * 1000,
+      retry: 0,
+      refetchOnWindowFocus: false,
     })),
   });
 
@@ -85,6 +101,8 @@ export function useInsight(userId: string = DEFAULT_USER_ID) {
     queryKey: ["insight", userId],
     queryFn: () => api.getInsight(userId),
     staleTime: 10 * 60 * 1000, // 10 minutes
+    retry: 0,
+    refetchOnWindowFocus: false,
   });
 }
 

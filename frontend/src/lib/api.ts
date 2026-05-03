@@ -19,13 +19,30 @@ import type {
   UpdateDailyFinanceRequest,
 } from "./types";
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+type RequestOptions = RequestInit & {
+  timeoutMs?: number;
+};
+
+async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const { timeoutMs = 8000, ...fetchOptions } = options;
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",
-      ...(options.headers || {}),
+      ...(fetchOptions.headers || {}),
     },
-    ...options,
+    ...fetchOptions,
+    signal: controller.signal,
+  }).catch((error) => {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("This request took too long. The backend may be waking up.");
+    }
+
+    throw new Error("Unable to reach the server right now.");
+  }).finally(() => {
+    window.clearTimeout(timeoutId);
   });
 
   if (!response.ok) {

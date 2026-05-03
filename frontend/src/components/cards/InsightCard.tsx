@@ -2,13 +2,22 @@ import { Sparkles, TrendingUp } from "lucide-react";
 import { useInsight } from "@/hooks/useApi";
 
 export function InsightCard() {
-  const { data: insight, isLoading } = useInsight();
+  const { data: insight, isLoading, error } = useInsight();
 
   if (isLoading) {
     return (
       <div className="bg-card rounded-[1.75rem] shadow-soft p-5 animate-pulse">
         <div className="h-8 w-24 bg-secondary rounded mb-3" />
         <div className="h-12 bg-secondary rounded w-full" />
+      </div>
+    );
+  }
+
+  if (error instanceof Error) {
+    return (
+      <div className="bg-card rounded-[1.75rem] shadow-soft p-5">
+        <div className="text-xs uppercase tracking-widest text-muted-foreground">AI Insight</div>
+        <p className="text-sm text-muted-foreground mt-3">{error.message}</p>
       </div>
     );
   }

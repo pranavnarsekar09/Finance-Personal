@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { PiggyBank, Target, Wallet } from "lucide-react";
+import { AlertCircle, PiggyBank, RefreshCw, Target, Wallet } from "lucide-react";
 import { useAddGoal, useDashboard, useExpenseTrend, useFinance, useGoals, useProfile, useSaveFinance, useSaveProfile } from "@/hooks/useApi";
 import { useSwipeNative } from "@/hooks/useSwipe";
 import { useHaptic } from "@/hooks/useHaptic";
@@ -34,11 +34,11 @@ export default function Home() {
   const month = format(new Date(), "yyyy-MM");
   const today = format(new Date(), "yyyy-MM-dd");
 
-  const { data: profile, isLoading: profileLoading } = useProfile();
-  const { data: dashboard, isLoading: dashLoading } = useDashboard(undefined, month, today);
-  const { data: finance, isLoading: financeLoading } = useFinance();
-  const { data: goals, isLoading: goalsLoading } = useGoals();
-  const expenseTrend = useExpenseTrend();
+  const profileQuery = useProfile();
+  const dashboardQuery = useDashboard(undefined, month, today);
+  const financeQuery = useFinance(undefined, tab === "spending");
+  const goalsQuery = useGoals(undefined, tab === "budget");
+  const expenseTrend = useExpenseTrend(undefined, tab === "budget");
 
   const pageVariants = {
     initial: (dir: number) => ({ x: dir > 0 ? 40 : -40, opacity: 0 }),
@@ -71,15 +71,12 @@ export default function Home() {
     ignoreSelector: "[data-swipe-ignore]",
   });
 
-  if (profileLoading || dashLoading || financeLoading || goalsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-pulse text-muted-foreground font-display text-xl">Loading your vision...</div>
-      </div>
-    );
-  }
-
+  const profile = profileQuery.data;
+  const dashboard = dashboardQuery.data;
+  const finance = financeQuery.data;
+  const goals = goalsQuery.data || [];
   const userInitials = profile?.name ? profile.name.split(" ").map((n: string) => n[0]).join("").toUpperCase() : "U";
+  const shellMessage = getShellMessage(profileQuery.isLoading, dashboardQuery.isLoading);
 
   return (
     <div className="space-y-5">
@@ -100,6 +97,8 @@ export default function Home() {
         </div>
       </div>
 
+      {shellMessage ? <PageStatusBanner message={shellMessage} /> : null}
+
       <AnimatePresence mode="wait" custom={direction}>
         <motion.div
           key={tab}
@@ -114,16 +113,27 @@ export default function Home() {
             <OverviewTab
               profileName={profile?.name || "User"}
               dashboard={dashboard}
+              dashboardLoading={dashboardQuery.isLoading}
+              dashboardError={dashboardQuery.error instanceof Error ? dashboardQuery.error.message : null}
             />
           ) : tab === "budget" ? (
             <BudgetTab
               profile={profile || null}
-              goals={goals || []}
+              profileLoading={profileQuery.isLoading}
+              profileError={profileQuery.error instanceof Error ? profileQuery.error.message : null}
+              goals={goals}
+              goalsLoading={goalsQuery.isLoading}
+              goalsError={goalsQuery.error instanceof Error ? goalsQuery.error.message : null}
               trendExpenses={expenseTrend.data.flatMap((entry) => entry.expenses)}
               trendLoading={expenseTrend.isLoading}
+              trendError={expenseTrend.isError ? "Spending trend is taking too long to load." : null}
             />
           ) : (
-            <SpendingTab finance={finance || dashboard?.spending || null} />
+            <SpendingTab
+              finance={finance || dashboard?.spending || null}
+              financeLoading={financeQuery.isLoading}
+              financeError={financeQuery.error instanceof Error ? financeQuery.error.message : null}
+            />
           )}
         </motion.div>
       </AnimatePresence>
@@ -133,8 +143,12 @@ export default function Home() {
 
 function SpendingTab({
   finance,
+  financeLoading,
+  financeError,
 }: {
   finance: any;
+  financeLoading: boolean;
+  financeError: string | null;
 }) {
   const saveFinance = useSaveFinance();
   const [dailyLimitInput, setDailyLimitInput] = useState(finance?.dailyLimit?.toString() || "100");
@@ -187,6 +201,9 @@ function SpendingTab({
         <h1 className="font-display text-4xl font-bold tracking-tight">Spending System</h1>
         <p className="text-sm text-muted-foreground mt-1">Track your daily limit, let leftover money flow into buffer and savings, and absorb overspending in the right order.</p>
       </div>
+
+      {financeError ? <QueryErrorCard title="Spending data unavailable" message={financeError} /> : null}
+      {financeLoading && !finance ? <QueryLoadingCard label="Waking your spending data..." /> : null}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-card rounded-[1.75rem] shadow-soft p-5">
@@ -332,9 +349,13 @@ function SpendingTab({
 function OverviewTab({
   profileName,
   dashboard,
+  dashboardLoading,
+  dashboardError,
 }: {
   profileName: string;
   dashboard: any;
+  dashboardLoading: boolean;
+  dashboardError: string | null;
 }) {
   return (
     <>
@@ -345,6 +366,9 @@ function OverviewTab({
         <h1 className="font-display text-4xl font-bold tracking-tight">Welcome Back!</h1>
         <p className="text-sm text-muted-foreground mt-1">Here&apos;s your account overview</p>
       </div>
+
+      {dashboardError ? <QueryErrorCard title="Overview is delayed" message={dashboardError} /> : null}
+      {dashboardLoading && !dashboard ? <QueryLoadingCard label="Loading your budget snapshot..." /> : null}
 
       <BalanceCard
         total={dashboard?.monthlyBudget || 0}
@@ -375,14 +399,24 @@ function OverviewTab({
 
 function BudgetTab({
   profile,
+  profileLoading,
+  profileError,
   goals,
+  goalsLoading,
+  goalsError,
   trendExpenses,
   trendLoading,
+  trendError,
 }: {
   profile: any;
+  profileLoading: boolean;
+  profileError: string | null;
   goals: any[];
+  goalsLoading: boolean;
+  goalsError: string | null;
   trendExpenses: any[];
   trendLoading: boolean;
+  trendError: string | null;
 }) {
   const saveProfile = useSaveProfile();
   const addGoal = useAddGoal();
@@ -470,6 +504,11 @@ function BudgetTab({
         <h1 className="font-display text-4xl font-bold tracking-tight">Budget Planner</h1>
         <p className="text-sm text-muted-foreground mt-1">Set your budget, calorie target, goals, and review expense trends.</p>
       </div>
+
+      {profileError ? <QueryErrorCard title="Profile settings unavailable" message={profileError} /> : null}
+      {goalsError ? <QueryErrorCard title="Goals are delayed" message={goalsError} /> : null}
+      {trendError ? <QueryErrorCard title="Trend chart is delayed" message={trendError} /> : null}
+      {profileLoading && !profile ? <QueryLoadingCard label="Loading budget settings..." /> : null}
 
       <SpendingTrendChart expenses={trendExpenses} isLoading={trendLoading} />
 
@@ -587,8 +626,55 @@ function BudgetTab({
             ))}
           </div>
         )}
+        {goalsLoading && goals.length === 0 && (
+          <div className="rounded-2xl bg-secondary/50 p-4 text-sm text-muted-foreground">Loading your goals...</div>
+        )}
       </div>
 
     </>
   );
+}
+
+function QueryLoadingCard({ label }: { label: string }) {
+  return (
+    <div className="bg-card rounded-[1.5rem] shadow-soft p-4 flex items-center gap-3">
+      <RefreshCw className="h-4 w-4 text-primary animate-spin" />
+      <div className="text-sm text-muted-foreground">{label}</div>
+    </div>
+  );
+}
+
+function QueryErrorCard({ title, message }: { title: string; message: string }) {
+  return (
+    <div className="bg-card rounded-[1.5rem] shadow-soft p-4">
+      <div className="flex items-start gap-3">
+        <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
+        <div>
+          <div className="text-sm font-semibold">{title}</div>
+          <div className="text-sm text-muted-foreground mt-1">{message}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PageStatusBanner({ message }: { message: string }) {
+  return (
+    <div className="rounded-[1.35rem] bg-secondary/70 px-4 py-3 text-sm text-muted-foreground">
+      {message}
+    </div>
+  );
+}
+
+function getShellMessage(profileLoading: boolean, dashboardLoading: boolean) {
+  if (profileLoading && dashboardLoading) {
+    return "Waking up your account and monthly summary. The page shell is ready while the backend catches up.";
+  }
+  if (dashboardLoading) {
+    return "Refreshing your monthly summary in the background.";
+  }
+  if (profileLoading) {
+    return "Refreshing your profile in the background.";
+  }
+  return null;
 }
