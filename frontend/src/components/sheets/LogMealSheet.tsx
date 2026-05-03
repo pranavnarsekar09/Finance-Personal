@@ -33,22 +33,10 @@ export function LogMealSheet({ open, onClose }: { open: boolean; onClose: () => 
         fat: parseFloat(fat) || 0,
         date,
         estimatedCost: costVal,
+        expenseCategoryName: costVal > 0 ? "Dining" : undefined,
       };
 
       await saveFoodLog.mutateAsync(mealPayload);
-
-      // If cost is provided, also log as expense
-      if (costVal > 0) {
-        await addExpense.mutateAsync({
-          userId: DEFAULT_USER_ID,
-          amount: costVal,
-          categoryName: "Dining",
-          paymentMethod: "UPI",
-          date,
-          note: `Meal: ${foodName}`,
-          isRecurring: false,
-        }).catch(err => console.error("Linked expense log failed:", err));
-      }
 
       toast.success(costVal > 0 ? "Meal logged & added to expenses" : "Meal logged successfully");
       reset();

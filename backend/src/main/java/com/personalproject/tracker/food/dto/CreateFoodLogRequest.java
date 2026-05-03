@@ -29,6 +29,7 @@ public record CreateFoodLogRequest(
         @NotNull(message = "Date is required")
         LocalDate date,
         String note,
-        String expenseCategoryName
+        String expenseCategoryName,
+        String linkedExpenseId
 ) {
 }

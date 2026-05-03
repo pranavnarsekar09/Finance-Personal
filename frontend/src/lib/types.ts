@@ -89,6 +89,7 @@ export interface CreateFoodLogRequest {
   date: string;
   note?: string;
   expenseCategoryName?: string;
+  linkedExpenseId?: string;
 }
 
 export interface Goal {

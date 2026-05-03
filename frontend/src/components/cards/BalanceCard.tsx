@@ -59,6 +59,7 @@ export function BalanceCard({ total, spent, todaySpent, available, userName, lat
 
   return (
     <motion.div
+      data-swipe-ignore
       initial={{ y: 20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ delay: 0.05, duration: 0.5 }}

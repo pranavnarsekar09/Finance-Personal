@@ -1,6 +1,9 @@
 import { useState, useContext, useMemo } from "react";
-import { useDashboard, useFoodLogs } from "@/hooks/useApi";
-import { Camera, Utensils, UtensilsCrossed } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useDashboard, useFoodLogs, useDeleteFoodLog } from "@/hooks/useApi";
+import { useSwipeNative } from "@/hooks/useSwipe";
+import { useHaptic } from "@/hooks/useHaptic";
+import { Camera, Utensils, UtensilsCrossed, Trash2 } from "lucide-react";
 import { format, parseISO, isSameWeek, subDays } from "date-fns";
 import type { FoodLog } from "@/lib/types";
 import { SheetContext } from "@/context/SheetContext";
@@ -8,12 +11,41 @@ import { SheetContext } from "@/context/SheetContext";
 export default function Health() {
   const { setMealOpen, setAnalyzeOpen } = useContext(SheetContext);
   const [view, setView] = useState<"today" | "week">("today");
+  const [direction, setDirection] = useState(0);
+  const { medium } = useHaptic();
   
   const month = format(new Date(), "yyyy-MM");
   const todayStr = format(new Date(), "yyyy-MM-dd");
   
   const { data: dashboard, isLoading: dashLoading } = useDashboard(undefined, month, todayStr);
   const { data: foodLogs, isLoading: logsLoading } = useFoodLogs(undefined, month);
+  const deleteFoodLog = useDeleteFoodLog();
+
+  const pageVariants = {
+    initial: (dir: number) => ({ x: dir > 0 ? 40 : -40, opacity: 0 }),
+    animate: { x: 0, opacity: 1, transition: { duration: 0.24, ease: "easeOut" } },
+    exit: (dir: number) => ({ x: dir > 0 ? -40 : 40, opacity: 0, transition: { duration: 0.18, ease: "easeIn" } }),
+  };
+
+  const changeView = (nextView: "today" | "week") => {
+    setDirection(nextView === "week" ? 1 : -1);
+    setView(nextView);
+    medium();
+  };
+
+  useSwipeNative({
+    onSwipeLeft: () => {
+      if (view === "today") {
+        changeView("week");
+      }
+    },
+    onSwipeRight: () => {
+      if (view === "week") {
+        changeView("today");
+      }
+    },
+    threshold: 50,
+  });
 
   const todaysLogs = (foodLogs || []).filter((l: FoodLog) => l.date === todayStr);
 
@@ -89,13 +121,13 @@ export default function Health() {
       <div className="flex justify-between items-center">
         <div className="bg-card/70 backdrop-blur rounded-full p-1 flex shadow-soft">
           <button 
-            onClick={() => setView("today")}
+            onClick={() => changeView("today")}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${view === "today" ? "bg-card shadow-soft text-primary" : "text-muted-foreground"}`}
           >
             Today
           </button>
           <button 
-            onClick={() => setView("week")}
+            onClick={() => changeView("week")}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${view === "week" ? "bg-card shadow-soft text-primary" : "text-muted-foreground"}`}
           >
             Week
@@ -106,9 +138,18 @@ export default function Health() {
         </span>
       </div>
 
-      {view === "today" ? (
-        // --- TODAY VIEW ---
-        <div className="animate-in fade-in slide-in-from-bottom-2 space-y-5">
+      <AnimatePresence mode="wait" custom={direction}>
+        <motion.div
+          key={view}
+          custom={direction}
+          className="space-y-5"
+          variants={pageVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+        >
+          {view === "today" ? (
+            <div className="animate-in fade-in slide-in-from-bottom-2 space-y-5">
           <h1 className="font-display text-4xl font-bold tracking-tight">Today's Plate</h1>
 
           <div className="bg-card rounded-[1.75rem] shadow-soft p-6 flex flex-col items-center">
@@ -169,11 +210,20 @@ export default function Health() {
               todaysLogs.map((m) => (
                 <div key={m.id} className="bg-card rounded-2xl shadow-soft p-4 border border-white/50">
                   <div className="flex justify-between items-start">
-                    <div>
+                    <div className="flex-1">
                       <div className="font-semibold">{m.foodName}</div>
                       <div className="text-xs text-muted-foreground">{typeof m.date === 'string' ? format(parseISO(m.date), "MMM d") : "?"}</div>
                     </div>
-                    <span className="bg-secondary px-2.5 py-1 rounded-full text-xs font-medium">₹{m.estimatedCost?.toFixed(2) || "0.00"}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="bg-secondary px-2.5 py-1 rounded-full text-xs font-medium">₹{m.estimatedCost?.toFixed(2) || "0.00"}</span>
+                      <button
+                        onClick={() => deleteFoodLog.mutate(m.id)}
+                        className="p-1.5 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                        disabled={deleteFoodLog.isPending}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
                   <div className="flex gap-1.5 mt-3 flex-wrap">
                     <span className="px-2.5 py-0.5 rounded-full bg-mint/40 text-[10px] font-bold text-primary">{Math.round(m.calories)} kcal</span>
@@ -280,7 +330,9 @@ export default function Health() {
             )}
           </div>
         </div>
-      )}
+          )}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

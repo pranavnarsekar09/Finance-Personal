@@ -134,4 +134,8 @@ public class InsightService {
 
         return response;
     }
+
+    public void invalidateInsightCache(String userId) {
+        insightCache.remove(userId);
+    }
 }

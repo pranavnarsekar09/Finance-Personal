@@ -157,6 +157,19 @@ export function useDeleteExpense() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["foodLogs"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar"] });
+    },
+  });
+}
+
+export function useDeleteFoodLog() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string | number) => api.deleteFoodLog(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["foodLogs"] });
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
     },
   });

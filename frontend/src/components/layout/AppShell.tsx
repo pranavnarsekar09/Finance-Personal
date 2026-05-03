@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Home, Wallet, Apple, User, Plus, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import HomePage from "@/pages/Home";
@@ -20,12 +21,59 @@ const tabs = [
 ] as const;
 
 export default function AppShell() {
-  const [active, setActive] = useState<(typeof tabs)[number]["id"]>("home");
+  const location = useLocation();
+  const navigate = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [mealOpen, setMealOpen] = useState(false);
   const [analyzeOpen, setAnalyzeOpen] = useState(false);
-  
+  const modalHistoryPushed = useRef(false);
+
+  const active = useMemo(() => {
+    const path = location.pathname.replace(/^\//, "") || "home";
+    return tabs.some((t) => t.id === path) ? (path as (typeof tabs)[number]["id"]) : "home";
+  }, [location.pathname]);
+
+  const activeSheet = chatOpen ? "chat" : addOpen ? "add" : mealOpen ? "meal" : analyzeOpen ? "analyze" : null;
+
+  const closeAllSheets = () => {
+    setChatOpen(false);
+    setAddOpen(false);
+    setMealOpen(false);
+    setAnalyzeOpen(false);
+  };
+
+  useEffect(() => {
+    if (!activeSheet) {
+      modalHistoryPushed.current = false;
+      return;
+    }
+
+    if (!modalHistoryPushed.current) {
+      window.history.pushState({ sheet: activeSheet }, "");
+      modalHistoryPushed.current = true;
+    }
+  }, [activeSheet]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (activeSheet) {
+        closeAllSheets();
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [activeSheet]);
+
+  const closeSheet = () => {
+    if (window.history.state?.sheet) {
+      window.history.back();
+    } else {
+      closeAllSheets();
+    }
+  };
+
   const Active = tabs.find((t) => t.id === active)!.Comp;
 
   return (
@@ -72,7 +120,7 @@ export default function AppShell() {
               return (
                 <button
                   key={t.id}
-                  onClick={() => setActive(t.id)}
+                  onClick={() => navigate(t.id === "home" ? "/" : `/${t.id}`)}
                   className={cn(
                     "relative flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-colors",
                     on ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
@@ -95,10 +143,10 @@ export default function AppShell() {
           </div>
         </nav>
 
-        <ChatSheet open={chatOpen} onClose={() => setChatOpen(false)} />
-        <AddExpenseSheet open={addOpen} onClose={() => setAddOpen(false)} />
-        <LogMealSheet open={mealOpen} onClose={() => setMealOpen(false)} />
-        <AnalyzeFoodSheet open={analyzeOpen} onClose={() => setAnalyzeOpen(false)} />
+        <ChatSheet open={chatOpen} onClose={closeSheet} />
+        <AddExpenseSheet open={addOpen} onClose={closeSheet} />
+        <LogMealSheet open={mealOpen} onClose={closeSheet} />
+        <AnalyzeFoodSheet open={analyzeOpen} onClose={closeSheet} />
       </div>
     </SheetContext.Provider>
   );

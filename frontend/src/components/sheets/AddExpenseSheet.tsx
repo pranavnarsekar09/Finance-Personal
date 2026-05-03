@@ -45,7 +45,7 @@ export function AddExpenseSheet({ open, onClose }: { open: boolean; onClose: () 
       const isFoodRelated = ["dining", "groceries", "food", "meal", "snacks", "drinks"].includes(selectedCat.toLowerCase());
 
       // 1. Add the expense
-      await addExpense.mutateAsync({
+      const createdExpense = await addExpense.mutateAsync({
         userId: DEFAULT_USER_ID,
         amount: amountVal,
         categoryName: selectedCat,
@@ -55,7 +55,7 @@ export function AddExpenseSheet({ open, onClose }: { open: boolean; onClose: () 
         isRecurring: false,
       });
 
-      // 2. If it's food related, also log as meal
+      // 2. If it's food related, also log as meal and link it to the created expense
       if (isFoodRelated) {
         await saveFoodLog.mutateAsync({
           userId: DEFAULT_USER_ID,
@@ -66,6 +66,7 @@ export function AddExpenseSheet({ open, onClose }: { open: boolean; onClose: () 
           fat: 0,
           date: date,
           estimatedCost: amountVal,
+          linkedExpenseId: createdExpense.id,
         }).catch(err => console.error("Linked meal log failed:", err));
       }
 

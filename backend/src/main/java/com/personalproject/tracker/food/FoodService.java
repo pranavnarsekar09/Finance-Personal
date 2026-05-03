@@ -7,6 +7,7 @@ import com.personalproject.tracker.food.dto.AnalyzeFoodRequest;
 import com.personalproject.tracker.food.dto.CreateFoodLogRequest;
 import com.personalproject.tracker.food.dto.FoodAnalysisResponse;
 import com.personalproject.tracker.food.dto.FoodLogResponse;
+import com.personalproject.tracker.expense.ExpenseRepository;
 import com.personalproject.tracker.profile.ProfileRepository;
 import com.personalproject.tracker.profile.UserProfile;
 import com.personalproject.tracker.shared.DateRangeUtils;
@@ -64,6 +65,12 @@ public class FoodService {
     private FoodLog syncFoodLogWithExpense(FoodLog log, CreateFoodLogRequest request) {
         String linkedCategory = resolveExpenseCategory(request.userId(), request.expenseCategoryName()).orElse(null);
 
+        // Only create/update expense if expenseCategoryName was explicitly provided
+        // This prevents duplicate expenses when food logs are created from expense sheet
+        if (!StringUtils.hasText(request.expenseCategoryName())) {
+            return foodLogRepository.save(log);
+        }
+
         if (StringUtils.hasText(log.getLinkedExpenseId()) && !StringUtils.hasText(linkedCategory)) {
             expenseService.deleteExpense(log.getLinkedExpenseId());
             log.setLinkedExpenseId(null);
@@ -103,6 +110,7 @@ public class FoodService {
         log.setEstimatedCost(request.estimatedCost());
         log.setDate(request.date());
         log.setNote(request.note() == null ? "" : request.note().trim());
+        log.setLinkedExpenseId(request.linkedExpenseId());
     }
 
     public List<FoodLogResponse> getLogs(String userId, String month) {
@@ -127,7 +135,20 @@ public class FoodService {
     }
 
     public void deleteFoodLog(String id) {
-        foodLogRepository.deleteById(id);
+        FoodLog foodLog = foodLogRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Food log not found for id: " + id));
+        
+        // Delete linked expense if it exists
+        if (StringUtils.hasText(foodLog.getLinkedExpenseId())) {
+            try {
+                expenseService.deleteExpense(foodLog.getLinkedExpenseId());
+            } catch (Exception e) {
+                // Linked expense might already be deleted, continue with food log deletion
+                System.err.println("Failed to delete linked expense: " + e.getMessage());
+            }
+        }
+        
+        foodLogRepository.delete(foodLog);
     }
 
     private Optional<String> resolveExpenseCategory(String userId, String explicitCategoryName) {

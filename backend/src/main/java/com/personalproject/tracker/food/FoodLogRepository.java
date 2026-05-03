@@ -15,5 +15,7 @@ public interface FoodLogRepository extends MongoRepository<FoodLog, String> {
 
     List<FoodLog> findByUserIdAndDate(String userId, LocalDate date);
 
+    List<FoodLog> findByLinkedExpenseId(String linkedExpenseId);
+
     void deleteByUserIdAndDate(String userId, LocalDate date);
 }

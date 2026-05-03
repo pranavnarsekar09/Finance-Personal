@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Target } from "lucide-react";
 import { useAddGoal, useDashboard, useExpenseTrend, useGoals, useProfile, useSaveProfile } from "@/hooks/useApi";
+import { useSwipeNative } from "@/hooks/useSwipe";
+import { useHaptic } from "@/hooks/useHaptic";
 import { BalanceCard } from "@/components/cards/BalanceCard";
 import { InsightCard } from "@/components/cards/InsightCard";
 import { StreakCard, CalorieBar } from "@/components/cards/StreakCard";
@@ -23,6 +26,8 @@ import type { CreateGoalRequest, GoalType, ProfileUpsertRequest } from "@/lib/ty
 
 export default function Home() {
   const [tab, setTab] = useState<"overview" | "budget">("overview");
+  const [direction, setDirection] = useState(0);
+  const { medium } = useHaptic();
   const month = format(new Date(), "yyyy-MM");
   const today = format(new Date(), "yyyy-MM-dd");
 
@@ -30,6 +35,33 @@ export default function Home() {
   const { data: dashboard, isLoading: dashLoading } = useDashboard(undefined, month, today);
   const { data: goals, isLoading: goalsLoading } = useGoals();
   const expenseTrend = useExpenseTrend();
+
+  const pageVariants = {
+    initial: (dir: number) => ({ x: dir > 0 ? 40 : -40, opacity: 0 }),
+    animate: { x: 0, opacity: 1, transition: { duration: 0.24, ease: "easeOut" } },
+    exit: (dir: number) => ({ x: dir > 0 ? -40 : 40, opacity: 0, transition: { duration: 0.18, ease: "easeIn" } }),
+  };
+
+  const changeTab = (nextTab: "overview" | "budget") => {
+    setDirection(nextTab === "budget" ? 1 : -1);
+    setTab(nextTab);
+    medium();
+  };
+
+  useSwipeNative({
+    onSwipeLeft: () => {
+      if (tab === "overview") {
+        changeTab("budget");
+      }
+    },
+    onSwipeRight: () => {
+      if (tab === "budget") {
+        changeTab("overview");
+      }
+    },
+    threshold: 50,
+    ignoreSelector: "[data-swipe-ignore]",
+  });
 
   if (profileLoading || dashLoading || goalsLoading) {
     return (
@@ -48,7 +80,7 @@ export default function Home() {
           {(["overview", "budget"] as const).map((t) => (
             <button
               key={t}
-              onClick={() => setTab(t)}
+              onClick={() => changeTab(t)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize transition ${tab === t ? "bg-card shadow-soft" : "text-muted-foreground"}`}
             >
               {t}
@@ -60,19 +92,31 @@ export default function Home() {
         </div>
       </div>
 
-      {tab === "overview" ? (
-        <OverviewTab
-          profileName={profile?.name || "User"}
-          dashboard={dashboard}
-        />
-      ) : (
-        <BudgetTab
-          profile={profile || null}
-          goals={goals || []}
-          trendExpenses={expenseTrend.data.flatMap((entry) => entry.expenses)}
-          trendLoading={expenseTrend.isLoading}
-        />
-      )}
+      <AnimatePresence mode="wait" custom={direction}>
+        <motion.div
+          key={tab}
+          custom={direction}
+          className="space-y-5"
+          variants={pageVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+        >
+          {tab === "overview" ? (
+            <OverviewTab
+              profileName={profile?.name || "User"}
+              dashboard={dashboard}
+            />
+          ) : (
+            <BudgetTab
+              profile={profile || null}
+              goals={goals || []}
+              trendExpenses={expenseTrend.data.flatMap((entry) => entry.expenses)}
+              trendLoading={expenseTrend.isLoading}
+            />
+          )}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

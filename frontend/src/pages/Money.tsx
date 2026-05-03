@@ -1,6 +1,9 @@
 import { useState, useMemo } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Search, ChevronLeft, ChevronRight, Car, ShoppingBag, Utensils, Zap, Coffee, Trash2 } from "lucide-react";
 import { useExpenses, useCalendar, useProfile, useDeleteExpense } from "@/hooks/useApi";
+import { useSwipeNative } from "@/hooks/useSwipe";
+import { useHaptic } from "@/hooks/useHaptic";
 import { format, parseISO, isToday, isYesterday, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay } from "date-fns";
 import { formatRupees } from "@/lib/utils";
 import { toast } from "sonner";
@@ -17,7 +20,9 @@ const categoryIcons: Record<string, any> = {
 
 export default function Money() {
   const [view, setView] = useState<"list" | "calendar">("list");
+  const [direction, setDirection] = useState(0);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const { medium } = useHaptic();
   const monthStr = format(currentMonth, "yyyy-MM");
   
   const { data: expenses, isLoading: expLoading } = useExpenses(undefined, monthStr);
@@ -26,6 +31,32 @@ export default function Money() {
   const filters = ["All", ...(profile?.categories?.map((c: any) => c.name) || [])];
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
+
+  const pageVariants = {
+    initial: (dir: number) => ({ x: dir > 0 ? 40 : -40, opacity: 0 }),
+    animate: { x: 0, opacity: 1, transition: { duration: 0.24, ease: "easeOut" } },
+    exit: (dir: number) => ({ x: dir > 0 ? -40 : 40, opacity: 0, transition: { duration: 0.18, ease: "easeIn" } }),
+  };
+
+  const changeView = (nextView: "list" | "calendar") => {
+    setDirection(nextView === "calendar" ? 1 : -1);
+    setView(nextView);
+    medium();
+  };
+
+  useSwipeNative({
+    onSwipeLeft: () => {
+      if (view === "list") {
+        changeView("calendar");
+      }
+    },
+    onSwipeRight: () => {
+      if (view === "calendar") {
+        changeView("list");
+      }
+    },
+    threshold: 50,
+  });
 
   const filteredExpenses = (expenses || []).filter((e: Expense) => {
     const matchesFilter = filter === "All" || e.categoryName === filter;
@@ -59,7 +90,7 @@ export default function Money() {
       <div className="flex justify-between items-center">
         <div className="bg-card/70 backdrop-blur rounded-full p-1 flex shadow-soft">
           {(["list", "calendar"] as const).map((t) => (
-            <button key={t} onClick={() => setView(t)}
+            <button key={t} onClick={() => changeView(t)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize transition ${view === t ? "bg-card shadow-soft text-primary" : "text-muted-foreground"}`}>
               {t}
             </button>
@@ -68,64 +99,76 @@ export default function Money() {
         <div className="text-xs uppercase tracking-widest text-muted-foreground">{format(currentMonth, "MMMM yyyy")}</div>
       </div>
 
-      {view === "list" ? (
-        <>
-          <h1 className="font-display text-4xl font-bold tracking-tight">Your Money</h1>
-          
-          <div className="bg-card rounded-full shadow-soft flex items-center px-5 py-3.5 gap-3">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <input 
-              className="flex-1 bg-transparent outline-none text-sm" 
-              placeholder="Search transactions" 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+      <AnimatePresence mode="wait" custom={direction}>
+        <motion.div
+          key={view}
+          custom={direction}
+          className="space-y-5"
+          variants={pageVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+        >
+          {view === "list" ? (
+            <>
+              <h1 className="font-display text-4xl font-bold tracking-tight">Your Money</h1>
 
-          <div className="flex gap-2 overflow-x-auto -mx-5 px-5 pb-1 no-scrollbar">
-            {filters.map((f) => (
-              <button key={f} onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition ${filter === f ? "bg-surface-dark text-primary-foreground" : "bg-card text-muted-foreground shadow-soft"}`}>
-                {f}
-              </button>
-            ))}
-          </div>
+              <div className="bg-card rounded-full shadow-soft flex items-center px-5 py-3.5 gap-3">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <input
+                  className="flex-1 bg-transparent outline-none text-sm"
+                  placeholder="Search transactions"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
 
-          <div className="space-y-6">
-            {expLoading ? (
-               <div className="p-10 text-center text-muted-foreground animate-pulse bg-card rounded-[1.75rem]">Loading transactions...</div>
-            ) : sortedDates.length > 0 ? (
-              sortedDates.map((date) => (
-                <div key={date} className="space-y-2">
-                  <div className="px-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-bold">
-                    {getDateLabel(date)}
-                  </div>
-                  <div className="bg-card rounded-[1.75rem] shadow-soft divide-y divide-border/50 overflow-hidden">
-                    {groupedExpenses[date].map((t) => (
-                      <ExpenseItem key={t.id} t={t} />
-                    ))}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="p-10 text-center text-muted-foreground bg-card rounded-[1.75rem]">No transactions found.</div>
-            )}
-          </div>
-        </>
-      ) : (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between px-2">
-            <button onClick={handlePrevMonth} className="h-10 w-10 rounded-full bg-card shadow-soft flex items-center justify-center hover:bg-secondary transition">
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <h1 className="font-display text-2xl font-bold">{format(currentMonth, "MMMM yyyy")}</h1>
-            <button onClick={handleNextMonth} className="h-10 w-10 rounded-full bg-card shadow-soft flex items-center justify-center hover:bg-secondary transition">
-              <ChevronRight className="h-5 w-5" />
-            </button>
-          </div>
-          <CalendarGrid monthStr={monthStr} />
-        </div>
-      )}
+              <div className="flex gap-2 overflow-x-auto -mx-5 px-5 pb-1 no-scrollbar">
+                {filters.map((f) => (
+                  <button key={f} onClick={() => setFilter(f)}
+                    className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition ${filter === f ? "bg-surface-dark text-primary-foreground" : "bg-card text-muted-foreground shadow-soft"}`}>
+                    {f}
+                  </button>
+                ))}
+              </div>
+
+              <div className="space-y-6">
+                {expLoading ? (
+                  <div className="p-10 text-center text-muted-foreground animate-pulse bg-card rounded-[1.75rem]">Loading transactions...</div>
+                ) : sortedDates.length > 0 ? (
+                  sortedDates.map((date) => (
+                    <div key={date} className="space-y-2">
+                      <div className="px-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-bold">
+                        {getDateLabel(date)}
+                      </div>
+                      <div className="bg-card rounded-[1.75rem] shadow-soft divide-y divide-border/50 overflow-hidden">
+                        {groupedExpenses[date].map((t) => (
+                          <ExpenseItem key={t.id} t={t} />
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-10 text-center text-muted-foreground bg-card rounded-[1.75rem]">No transactions found.</div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between px-2">
+                <button onClick={handlePrevMonth} className="h-10 w-10 rounded-full bg-card shadow-soft flex items-center justify-center hover:bg-secondary transition">
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <h1 className="font-display text-2xl font-bold">{format(currentMonth, "MMMM yyyy")}</h1>
+                <button onClick={handleNextMonth} className="h-10 w-10 rounded-full bg-card shadow-soft flex items-center justify-center hover:bg-secondary transition">
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </div>
+              <CalendarGrid monthStr={monthStr} />
+            </div>
+          )}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

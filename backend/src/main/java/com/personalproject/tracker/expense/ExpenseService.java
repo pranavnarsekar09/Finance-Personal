@@ -3,8 +3,10 @@ package com.personalproject.tracker.expense;
 import com.personalproject.tracker.common.ResourceNotFoundException;
 import com.personalproject.tracker.expense.dto.CreateExpenseRequest;
 import com.personalproject.tracker.expense.dto.ExpenseResponse;
+import com.personalproject.tracker.ai.InsightService;
 import com.personalproject.tracker.profile.ProfileRepository;
 import com.personalproject.tracker.profile.UserProfile;
+import com.personalproject.tracker.food.FoodLogRepository;
 import com.personalproject.tracker.shared.DateRangeUtils;
 import com.personalproject.tracker.shared.MonthRange;
 import java.time.Instant;
@@ -20,10 +22,14 @@ public class ExpenseService {
 
     private final ExpenseRepository expenseRepository;
     private final ProfileRepository profileRepository;
+    private final InsightService insightService;
+    private final FoodLogRepository foodLogRepository;
 
-    public ExpenseService(ExpenseRepository expenseRepository, ProfileRepository profileRepository) {
+    public ExpenseService(ExpenseRepository expenseRepository, ProfileRepository profileRepository, InsightService insightService, FoodLogRepository foodLogRepository) {
         this.expenseRepository = expenseRepository;
         this.profileRepository = profileRepository;
+        this.insightService = insightService;
+        this.foodLogRepository = foodLogRepository;
     }
 
     public ExpenseResponse createExpense(CreateExpenseRequest request) {
@@ -33,7 +39,9 @@ public class ExpenseService {
         applyExpenseRequest(expense, request);
         expense.setCreatedAt(Instant.now());
 
-        return toResponse(expenseRepository.save(expense));
+        ExpenseResponse response = toResponse(expenseRepository.save(expense));
+        insightService.invalidateInsightCache(request.userId());
+        return response;
     }
 
     public ExpenseResponse updateExpense(String id, CreateExpenseRequest request) {
@@ -43,7 +51,9 @@ public class ExpenseService {
 
         applyExpenseRequest(expense, request);
 
-        return toResponse(expenseRepository.save(expense));
+        ExpenseResponse response = toResponse(expenseRepository.save(expense));
+        insightService.invalidateInsightCache(request.userId());
+        return response;
     }
 
     private void applyExpenseRequest(Expense expense, CreateExpenseRequest request) {
@@ -75,14 +85,21 @@ public class ExpenseService {
     }
 
     public void deleteExpense(String id) {
-        if (!expenseRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Expense not found for id: " + id);
-        }
-        expenseRepository.deleteById(id);
+        Expense expense = expenseRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Expense not found for id: " + id));
+        
+        // Delete any linked food logs
+        foodLogRepository.findByLinkedExpenseId(id).forEach(foodLog -> {
+            foodLogRepository.delete(foodLog);
+        });
+        
+        expenseRepository.delete(expense);
+        insightService.invalidateInsightCache(expense.getUserId());
     }
 
     public void deleteExpensesByDate(String userId, LocalDate date) {
         expenseRepository.deleteByUserIdAndDate(requireUserId(userId), date);
+        insightService.invalidateInsightCache(userId);
     }
 
     public ExpenseResponse addDerivedExpense(
