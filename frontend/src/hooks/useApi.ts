@@ -5,7 +5,9 @@ import type {
   CreateGoalRequest,
   CreateExpenseRequest,
   CreateFoodLogRequest,
+  FinanceSettingsRequest,
   ProfileUpsertRequest,
+  UpdateDailyFinanceRequest,
   UpdateCategoriesRequest,
 } from "@/lib/types";
 import { format, subMonths } from "date-fns";
@@ -23,6 +25,14 @@ export function useDashboard(userId: string = DEFAULT_USER_ID, month: string, to
     queryKey: ["dashboard", userId, month, today],
     queryFn: () => api.getDashboard(userId, month, today),
     staleTime: 1 * 60 * 1000, // 1 minute
+  });
+}
+
+export function useFinance(userId: string = DEFAULT_USER_ID) {
+  return useQuery({
+    queryKey: ["finance", userId],
+    queryFn: () => api.getFinance(userId),
+    staleTime: 1 * 60 * 1000,
   });
 }
 
@@ -90,10 +100,11 @@ export function useAddExpense() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateExpenseRequest) => api.addExpense(payload),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["dashboard"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["expenses"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["calendar"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["finance", variables.userId], exact: false });
     },
   });
 }
@@ -117,6 +128,28 @@ export function useSaveProfile(userId: string = DEFAULT_USER_ID) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile", userId] });
       queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
+    },
+  });
+}
+
+export function useSaveFinance(userId: string = DEFAULT_USER_ID) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: FinanceSettingsRequest) => api.saveFinance(userId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["finance", userId] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
+    },
+  });
+}
+
+export function useUpdateDailyFinance() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: UpdateDailyFinanceRequest) => api.updateDailyFinance(payload),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["finance", variables.userId] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard", variables.userId] });
     },
   });
 }
@@ -159,6 +192,7 @@ export function useDeleteExpense() {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
       queryClient.invalidateQueries({ queryKey: ["foodLogs"] });
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
+      queryClient.invalidateQueries({ queryKey: ["finance"] });
     },
   });
 }

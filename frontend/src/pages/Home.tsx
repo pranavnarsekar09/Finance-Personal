@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { Target } from "lucide-react";
-import { useAddGoal, useDashboard, useExpenseTrend, useGoals, useProfile, useSaveProfile } from "@/hooks/useApi";
+import { PiggyBank, Target, Wallet } from "lucide-react";
+import { useAddGoal, useDashboard, useExpenseTrend, useFinance, useGoals, useProfile, useSaveFinance, useSaveProfile } from "@/hooks/useApi";
 import { useSwipeNative } from "@/hooks/useSwipe";
 import { useHaptic } from "@/hooks/useHaptic";
 import { BalanceCard } from "@/components/cards/BalanceCard";
@@ -22,10 +22,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn, formatRupees } from "@/lib/utils";
-import type { CreateGoalRequest, GoalType, ProfileUpsertRequest } from "@/lib/types";
+import type { CreateGoalRequest, FinanceSettingsRequest, GoalType, ProfileUpsertRequest } from "@/lib/types";
+
+const HOME_TABS = ["overview", "budget", "spending"] as const;
+type HomeTab = (typeof HOME_TABS)[number];
 
 export default function Home() {
-  const [tab, setTab] = useState<"overview" | "budget">("overview");
+  const [tab, setTab] = useState<HomeTab>("overview");
   const [direction, setDirection] = useState(0);
   const { medium } = useHaptic();
   const month = format(new Date(), "yyyy-MM");
@@ -33,6 +36,7 @@ export default function Home() {
 
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: dashboard, isLoading: dashLoading } = useDashboard(undefined, month, today);
+  const { data: finance, isLoading: financeLoading } = useFinance();
   const { data: goals, isLoading: goalsLoading } = useGoals();
   const expenseTrend = useExpenseTrend();
 
@@ -42,28 +46,32 @@ export default function Home() {
     exit: (dir: number) => ({ x: dir > 0 ? -40 : 40, opacity: 0, transition: { duration: 0.18, ease: "easeIn" } }),
   };
 
-  const changeTab = (nextTab: "overview" | "budget") => {
-    setDirection(nextTab === "budget" ? 1 : -1);
+  const changeTab = (nextTab: HomeTab) => {
+    const currentIndex = HOME_TABS.indexOf(tab);
+    const nextIndex = HOME_TABS.indexOf(nextTab);
+    setDirection(nextIndex > currentIndex ? 1 : -1);
     setTab(nextTab);
     medium();
   };
 
   useSwipeNative({
     onSwipeLeft: () => {
-      if (tab === "overview") {
-        changeTab("budget");
+      const currentIndex = HOME_TABS.indexOf(tab);
+      if (currentIndex < HOME_TABS.length - 1) {
+        changeTab(HOME_TABS[currentIndex + 1]);
       }
     },
     onSwipeRight: () => {
-      if (tab === "budget") {
-        changeTab("overview");
+      const currentIndex = HOME_TABS.indexOf(tab);
+      if (currentIndex > 0) {
+        changeTab(HOME_TABS[currentIndex - 1]);
       }
     },
     threshold: 50,
     ignoreSelector: "[data-swipe-ignore]",
   });
 
-  if (profileLoading || dashLoading || goalsLoading) {
+  if (profileLoading || dashLoading || financeLoading || goalsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="animate-pulse text-muted-foreground font-display text-xl">Loading your vision...</div>
@@ -77,7 +85,7 @@ export default function Home() {
     <div className="space-y-5">
       <div className="flex justify-between items-center">
         <div className="bg-card/70 backdrop-blur rounded-full p-1 flex shadow-soft">
-          {(["overview", "budget"] as const).map((t) => (
+          {HOME_TABS.map((t) => (
             <button
               key={t}
               onClick={() => changeTab(t)}
@@ -107,17 +115,217 @@ export default function Home() {
               profileName={profile?.name || "User"}
               dashboard={dashboard}
             />
-          ) : (
+          ) : tab === "budget" ? (
             <BudgetTab
               profile={profile || null}
               goals={goals || []}
               trendExpenses={expenseTrend.data.flatMap((entry) => entry.expenses)}
               trendLoading={expenseTrend.isLoading}
             />
+          ) : (
+            <SpendingTab finance={finance || dashboard?.spending || null} />
           )}
         </motion.div>
       </AnimatePresence>
     </div>
+  );
+}
+
+function SpendingTab({
+  finance,
+}: {
+  finance: any;
+}) {
+  const saveFinance = useSaveFinance();
+  const [dailyLimitInput, setDailyLimitInput] = useState(finance?.dailyLimit?.toString() || "100");
+  const [startingBufferInput, setStartingBufferInput] = useState(finance?.startingBuffer?.toString?.() || finance?.buffer?.toString?.() || "0");
+  const [startingSavingsInput, setStartingSavingsInput] = useState(finance?.startingSavings?.toString?.() || finance?.savings?.toString?.() || "0");
+  const [trackingStartDate, setTrackingStartDate] = useState(finance?.trackingStartDate || format(new Date(), "yyyy-MM-dd"));
+
+  useEffect(() => {
+    setDailyLimitInput(finance?.dailyLimit?.toString() || "100");
+    setStartingBufferInput(finance?.startingBuffer?.toString?.() || finance?.buffer?.toString?.() || "0");
+    setStartingSavingsInput(finance?.startingSavings?.toString?.() || finance?.savings?.toString?.() || "0");
+    setTrackingStartDate(finance?.trackingStartDate || format(new Date(), "yyyy-MM-dd"));
+  }, [finance?.dailyLimit, finance?.startingBuffer, finance?.startingSavings, finance?.buffer, finance?.savings, finance?.trackingStartDate]);
+
+  const handleSave = async () => {
+    const payload: FinanceSettingsRequest = {
+      dailyLimit: Number(dailyLimitInput),
+      startingBuffer: Number(startingBufferInput),
+      startingSavings: Number(startingSavingsInput),
+      trackingStartDate,
+    };
+
+    if (payload.dailyLimit <= 0) {
+      toast.error("Daily limit must be greater than 0.");
+      return;
+    }
+
+    if ((payload.startingBuffer ?? 0) < 0) {
+      toast.error("Buffer cannot start below 0.");
+      return;
+    }
+
+    try {
+      await saveFinance.mutateAsync(payload);
+      toast.success("Spending settings updated.");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save spending settings.");
+    }
+  };
+
+  const todayDifference = finance?.todayDifference || 0;
+  const recentRecords = finance?.recentDailyRecords || [];
+
+  return (
+    <>
+      <div className="pt-2">
+        <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground font-bold mb-1">
+          {format(new Date(), "EEEE, d MMMM")}
+        </div>
+        <h1 className="font-display text-4xl font-bold tracking-tight">Spending System</h1>
+        <p className="text-sm text-muted-foreground mt-1">Track your daily limit, let leftover money flow into buffer and savings, and absorb overspending in the right order.</p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="bg-card rounded-[1.75rem] shadow-soft p-5">
+          <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground mb-3">
+            <Wallet className="h-4 w-4 text-primary" />
+            Daily Limit
+          </div>
+          <div className="font-display text-3xl font-bold">{formatRupees(finance?.dailyLimit || 0)}</div>
+          <p className="text-sm text-muted-foreground mt-2">Spent today: {formatRupees(finance?.todaySpent || 0)}</p>
+        </div>
+
+        <div className="bg-card rounded-[1.75rem] shadow-soft p-5">
+          <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground mb-3">
+            <Wallet className="h-4 w-4 text-primary" />
+            Buffer
+          </div>
+          <div className="font-display text-3xl font-bold">{formatRupees(finance?.buffer || 0)}</div>
+          <p className="text-sm text-muted-foreground mt-2">Used first whenever you go above the limit.</p>
+        </div>
+
+        <div className="bg-card rounded-[1.75rem] shadow-soft p-5">
+          <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground mb-3">
+            <PiggyBank className="h-4 w-4 text-primary" />
+            Savings
+          </div>
+          <div className="font-display text-3xl font-bold">{formatRupees(finance?.savings || 0)}</div>
+          <p className="text-sm text-muted-foreground mt-2">
+            {todayDifference >= 0 ? `${formatRupees(todayDifference)} available to split today.` : `${formatRupees(Math.abs(todayDifference))} pulled from reserves today.`}
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-card rounded-[1.75rem] shadow-soft p-5 space-y-5">
+        <div className="flex items-center gap-2">
+          <Wallet className="h-4 w-4 text-primary" />
+          <div className="text-xs uppercase tracking-widest text-muted-foreground">Finance Settings</div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Daily Limit</div>
+            <Input
+              type="number"
+              min="1"
+              value={dailyLimitInput}
+              onChange={(e) => setDailyLimitInput(e.target.value)}
+              placeholder="100"
+              className="rounded-2xl h-12"
+            />
+          </div>
+          <div>
+            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Tracking Start</div>
+            <Input
+              type="date"
+              value={trackingStartDate}
+              onChange={(e) => setTrackingStartDate(e.target.value)}
+              className="rounded-2xl h-12"
+            />
+          </div>
+          <div>
+            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Starting Buffer</div>
+            <Input
+              type="number"
+              min="0"
+              value={startingBufferInput}
+              onChange={(e) => setStartingBufferInput(e.target.value)}
+              placeholder="0"
+              className="rounded-2xl h-12"
+            />
+          </div>
+          <div>
+            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Starting Savings</div>
+            <Input
+              type="number"
+              value={startingSavingsInput}
+              onChange={(e) => setStartingSavingsInput(e.target.value)}
+              placeholder="0"
+              className="rounded-2xl h-12"
+            />
+          </div>
+        </div>
+
+        <button
+          onClick={handleSave}
+          disabled={saveFinance.isPending}
+          className="w-full rounded-full bg-surface-dark text-primary-foreground py-3.5 font-medium disabled:opacity-50"
+        >
+          {saveFinance.isPending ? "Saving..." : "Save Spending Settings"}
+        </button>
+
+        <div className="rounded-2xl bg-secondary/50 p-4 text-sm text-muted-foreground">
+          Buffer never drops below zero. Any overspend beyond the buffer is deducted from savings, and savings are allowed to go negative if needed.
+        </div>
+      </div>
+
+      <div className="bg-card rounded-[1.75rem] shadow-soft p-5 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-xs uppercase tracking-widest text-muted-foreground">Recent Daily Results</div>
+            <div className="text-sm text-muted-foreground mt-1">Each row shows one day of spending logic after all current expense entries were recalculated.</div>
+          </div>
+          <div className="text-right text-xs text-muted-foreground">
+            Last processed: {finance?.lastProcessedDate ? format(new Date(finance.lastProcessedDate), "d MMM yyyy") : "Today"}
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {recentRecords.length === 0 ? (
+            <div className="rounded-2xl bg-secondary/50 p-4 text-sm text-muted-foreground">No finance history yet. Add expenses or save your spending settings to begin tracking.</div>
+          ) : (
+            recentRecords.map((record: any) => (
+              <div key={record.date} className="rounded-2xl bg-secondary/60 p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="font-semibold">{format(new Date(record.date), "d MMM yyyy")}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Spent {formatRupees(record.spentAmount)} against {formatRupees(record.dailyLimit)}
+                    </div>
+                  </div>
+                  <div className={cn("text-sm font-medium", record.extraAmount > 0 ? "text-destructive" : "text-emerald-600")}>
+                    {record.extraAmount > 0 ? `-${formatRupees(record.extraAmount)}` : `+${formatRupees(record.leftoverAmount)}`}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3 mt-4 text-sm">
+                  <div className="rounded-xl bg-background/70 p-3">
+                    <div className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Buffer After</div>
+                    <div className="font-semibold">{formatRupees(record.bufferAfter)}</div>
+                  </div>
+                  <div className="rounded-xl bg-background/70 p-3">
+                    <div className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Savings After</div>
+                    <div className="font-semibold">{formatRupees(record.savingsAfter)}</div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </>
   );
 }
 

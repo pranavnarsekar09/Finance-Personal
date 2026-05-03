@@ -3,6 +3,8 @@ import type {
   CalendarEntry,
   ChatResponse,
   CreateExpenseRequest,
+  Finance,
+  FinanceSettingsRequest,
   CreateFoodLogRequest,
   DashboardSummary,
   Expense,
@@ -14,6 +16,7 @@ import type {
   Profile,
   ProfileUpsertRequest,
   UpdateCategoriesRequest,
+  UpdateDailyFinanceRequest,
 } from "./types";
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -52,6 +55,18 @@ export const api = {
     }),
   getDashboard: (userId: string, month: string, today?: string) =>
     request<DashboardSummary>(`/api/dashboard/summary?userId=${encodeURIComponent(userId)}&month=${month}${today ? `&today=${today}` : ""}`),
+  getFinance: (userId: string) =>
+    request<Finance>(`/api/finance?userId=${encodeURIComponent(userId)}`),
+  saveFinance: (userId: string, payload: FinanceSettingsRequest) =>
+    request<Finance>(`/api/finance?userId=${encodeURIComponent(userId)}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  updateDailyFinance: (payload: UpdateDailyFinanceRequest) =>
+    request<Finance>("/api/finance/update-daily", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   getExpenses: (userId: string, month: string) =>
     request<Expense[]>(`/api/expenses?userId=${encodeURIComponent(userId)}&month=${month}`),
   addExpense: (payload: CreateExpenseRequest) =>

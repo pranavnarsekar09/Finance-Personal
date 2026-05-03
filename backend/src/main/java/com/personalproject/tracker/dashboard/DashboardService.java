@@ -2,8 +2,10 @@ package com.personalproject.tracker.dashboard;
 
 import com.personalproject.tracker.dashboard.dto.CategorySpendSummary;
 import com.personalproject.tracker.dashboard.dto.DashboardSummaryResponse;
+import com.personalproject.tracker.dashboard.dto.SpendingSummary;
 import com.personalproject.tracker.expense.ExpenseRepository;
 import com.personalproject.tracker.expense.dto.ExpenseResponse;
+import com.personalproject.tracker.finance.FinanceService;
 import com.personalproject.tracker.food.FoodLogRepository;
 import com.personalproject.tracker.profile.ProfileRepository;
 import com.personalproject.tracker.profile.UserCategory;
@@ -23,15 +25,18 @@ public class DashboardService {
     private final ProfileRepository profileRepository;
     private final ExpenseRepository expenseRepository;
     private final FoodLogRepository foodLogRepository;
+    private final FinanceService financeService;
 
     public DashboardService(
             ProfileRepository profileRepository,
             ExpenseRepository expenseRepository,
-            FoodLogRepository foodLogRepository
+            FoodLogRepository foodLogRepository,
+            FinanceService financeService
     ) {
         this.profileRepository = profileRepository;
         this.expenseRepository = expenseRepository;
         this.foodLogRepository = foodLogRepository;
+        this.financeService = financeService;
     }
 
     public DashboardSummaryResponse getSummary(String userId, String month, String todayStr) {
@@ -132,6 +137,8 @@ public class DashboardService {
             checkDate = checkDate.minusDays(1);
         }
 
+        FinanceService.FinanceSnapshot financeSnapshot = financeService.getFinanceSnapshot(userId, today);
+
         return new DashboardSummaryResponse(
                 userId,
                 monthlyBudget,
@@ -144,7 +151,16 @@ public class DashboardService {
                 foodCost,
                 dailySpending,
                 streak,
-                spentToday
+                spentToday,
+                new SpendingSummary(
+                        financeSnapshot.dailyLimit(),
+                        financeSnapshot.buffer(),
+                        financeSnapshot.savings(),
+                        financeSnapshot.todaySpent(),
+                        financeSnapshot.todayDifference(),
+                        financeSnapshot.trackingStartDate(),
+                        financeSnapshot.lastProcessedDate()
+                )
         );
     }
 }

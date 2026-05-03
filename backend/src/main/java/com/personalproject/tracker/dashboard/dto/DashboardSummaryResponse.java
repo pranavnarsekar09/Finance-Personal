@@ -15,6 +15,7 @@ public record DashboardSummaryResponse(
         Double monthlyFoodCost,
         List<DailySpendSummary> dailySpending,
         Integer streak,
-        Double spentToday
+        Double spentToday,
+        SpendingSummary spending
 ) {
 }

@@ -149,6 +149,56 @@ export interface DashboardSummary {
   dailySpending: DailySpendSummary[];
   streak: number;
   spentToday: number;
+  spending: SpendingSummary;
+}
+
+export interface FinanceDailyRecord {
+  date: string;
+  spentAmount: number;
+  dailyLimit: number;
+  leftoverAmount: number;
+  extraAmount: number;
+  bufferChange: number;
+  savingsChange: number;
+  bufferAfter: number;
+  savingsAfter: number;
+}
+
+export interface SpendingSummary {
+  dailyLimit: number;
+  buffer: number;
+  savings: number;
+  todaySpent: number;
+  todayDifference: number;
+  trackingStartDate: string;
+  lastProcessedDate: string;
+}
+
+export interface Finance {
+  userId: string;
+  dailyLimit: number;
+  startingBuffer: number;
+  startingSavings: number;
+  buffer: number;
+  savings: number;
+  trackingStartDate: string;
+  lastProcessedDate: string;
+  todaySpent: number;
+  todayDifference: number;
+  recentDailyRecords: FinanceDailyRecord[];
+}
+
+export interface FinanceSettingsRequest {
+  dailyLimit: number;
+  startingBuffer?: number;
+  startingSavings?: number;
+  trackingStartDate?: string;
+}
+
+export interface UpdateDailyFinanceRequest {
+  userId: string;
+  spentAmount: number;
+  date?: string;
 }
 
 export interface CalendarEntry {

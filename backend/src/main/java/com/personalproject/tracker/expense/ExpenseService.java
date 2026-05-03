@@ -4,6 +4,7 @@ import com.personalproject.tracker.common.ResourceNotFoundException;
 import com.personalproject.tracker.expense.dto.CreateExpenseRequest;
 import com.personalproject.tracker.expense.dto.ExpenseResponse;
 import com.personalproject.tracker.ai.InsightService;
+import com.personalproject.tracker.finance.FinanceService;
 import com.personalproject.tracker.profile.ProfileRepository;
 import com.personalproject.tracker.profile.UserProfile;
 import com.personalproject.tracker.food.FoodLogRepository;
@@ -24,12 +25,20 @@ public class ExpenseService {
     private final ProfileRepository profileRepository;
     private final InsightService insightService;
     private final FoodLogRepository foodLogRepository;
+    private final FinanceService financeService;
 
-    public ExpenseService(ExpenseRepository expenseRepository, ProfileRepository profileRepository, InsightService insightService, FoodLogRepository foodLogRepository) {
+    public ExpenseService(
+            ExpenseRepository expenseRepository,
+            ProfileRepository profileRepository,
+            InsightService insightService,
+            FoodLogRepository foodLogRepository,
+            FinanceService financeService
+    ) {
         this.expenseRepository = expenseRepository;
         this.profileRepository = profileRepository;
         this.insightService = insightService;
         this.foodLogRepository = foodLogRepository;
+        this.financeService = financeService;
     }
 
     public ExpenseResponse createExpense(CreateExpenseRequest request) {
@@ -41,6 +50,7 @@ public class ExpenseService {
 
         ExpenseResponse response = toResponse(expenseRepository.save(expense));
         insightService.invalidateInsightCache(request.userId());
+        financeService.refreshFromExpenses(request.userId());
         return response;
     }
 
@@ -48,11 +58,16 @@ public class ExpenseService {
         validateUserCategory(request.userId(), request.categoryName());
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense not found for id: " + id));
+        String previousUserId = expense.getUserId();
 
         applyExpenseRequest(expense, request);
 
         ExpenseResponse response = toResponse(expenseRepository.save(expense));
         insightService.invalidateInsightCache(request.userId());
+        financeService.refreshFromExpenses(request.userId());
+        if (!previousUserId.equals(request.userId())) {
+            financeService.refreshFromExpenses(previousUserId);
+        }
         return response;
     }
 
@@ -95,11 +110,13 @@ public class ExpenseService {
         
         expenseRepository.delete(expense);
         insightService.invalidateInsightCache(expense.getUserId());
+        financeService.refreshFromExpenses(expense.getUserId());
     }
 
     public void deleteExpensesByDate(String userId, LocalDate date) {
         expenseRepository.deleteByUserIdAndDate(requireUserId(userId), date);
         insightService.invalidateInsightCache(userId);
+        financeService.refreshFromExpenses(userId);
     }
 
     public ExpenseResponse addDerivedExpense(
