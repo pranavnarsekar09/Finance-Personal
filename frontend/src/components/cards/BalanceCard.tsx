@@ -9,11 +9,14 @@ interface BalanceCardProps {
   spent: number;
   todaySpent: number;
   available: number;
+  savings: number;
+  savingsChange: number;
+  dailyLimit: number;
   userName: string;
   latestExpense?: Expense | null;
 }
 
-export function BalanceCard({ total, spent, todaySpent, available, userName, latestExpense }: BalanceCardProps) {
+export function BalanceCard({ total, spent, todaySpent, available, savings, savingsChange, dailyLimit, userName, latestExpense }: BalanceCardProps) {
   const [api, setApi] = useState<CarouselApi>();
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -50,10 +53,10 @@ export function BalanceCard({ total, spent, todaySpent, available, userName, lat
       progress: total > 0 ? (todaySpent / total) * 100 : 0,
     },
     {
-      label: "Month Spend",
-      amount: spent,
-      caption: `${formatRupees(available)} left this month`,
-      progress: total > 0 ? (spent / total) * 100 : 0,
+      label: "Savings Jar",
+      amount: savings,
+      caption: savingsChange >= 0 ? `${formatRupees(savingsChange)} added today` : `${formatRupees(Math.abs(savingsChange))} used today`,
+      progress: total > 0 ? (savings / total) * 100 : 0,
     },
   ];
 
@@ -96,16 +99,21 @@ export function BalanceCard({ total, spent, todaySpent, available, userName, lat
                       className="h-full bg-mint rounded-full"
                     />
                   </div>
-                  <div className="flex justify-end gap-1 mt-3">
-                    {slides.map((_, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => api?.scrollTo(index)}
-                        aria-label={`Go to card ${index + 1}`}
-                        className={`h-1.5 rounded-full transition-all ${activeIndex === index ? "w-5 bg-mint" : "w-1.5 bg-white/20"}`}
-                      />
-                    ))}
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <div className="flex gap-1">
+                      {slides.map((_, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => api?.scrollTo(index)}
+                          aria-label={`Go to card ${index + 1}`}
+                          className={`h-1.5 rounded-full transition-all ${activeIndex === index ? "w-5 bg-mint" : "w-1.5 bg-white/20"}`}
+                        />
+                      ))}
+                    </div>
+                    <div className="rounded-full bg-white/10 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-mint shadow-sm">
+                      Daily limit {formatRupees(dailyLimit)}
+                    </div>
                   </div>
                 </div>
               </div>

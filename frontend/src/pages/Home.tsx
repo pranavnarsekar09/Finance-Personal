@@ -36,7 +36,7 @@ export default function Home() {
 
   const profileQuery = useProfile();
   const dashboardQuery = useDashboard(undefined, month, today);
-  const financeQuery = useFinance(undefined, tab === "spending");
+  const financeQuery = useFinance(undefined, tab !== "budget");
   const goalsQuery = useGoals(undefined, tab === "budget");
   const expenseTrend = useExpenseTrend(undefined, tab === "budget");
 
@@ -74,7 +74,7 @@ export default function Home() {
 
   const profile = profileQuery.data;
   const dashboard = dashboardQuery.data;
-  const finance = financeQuery.data;
+  const finance = financeQuery.data || dashboard?.spending || null;
   const goals = goalsQuery.data || [];
   const userInitials = profile?.name ? profile.name.split(" ").map((n: string) => n[0]).join("").toUpperCase() : "U";
   const shellMessage = getShellMessage(profileQuery.isLoading, dashboardQuery.isLoading);
@@ -114,6 +114,7 @@ export default function Home() {
             <OverviewTab
               profileName={profile?.name || "User"}
               dashboard={dashboard}
+              finance={finance}
               dashboardLoading={dashboardQuery.isLoading}
               dashboardError={dashboardQuery.error instanceof Error ? dashboardQuery.error.message : null}
             />
@@ -350,11 +351,13 @@ function SpendingTab({
 function OverviewTab({
   profileName,
   dashboard,
+  finance,
   dashboardLoading,
   dashboardError,
 }: {
   profileName: string;
   dashboard: any;
+  finance?: any | null;
   dashboardLoading: boolean;
   dashboardError: string | null;
 }) {
@@ -376,6 +379,9 @@ function OverviewTab({
         spent={dashboard?.totalSpent || 0}
         todaySpent={dashboard?.spentToday || 0}
         available={dashboard?.remainingBudget || 0}
+        savings={finance?.savings || 0}
+        savingsChange={finance?.todayDifference || 0}
+        dailyLimit={finance?.dailyLimit || 0}
         userName={profileName}
         latestExpense={dashboard?.recentTransactions?.[0] || null}
       />
