@@ -9,24 +9,31 @@ export function registerSW() {
       navigator.serviceWorker
         .register("/sw.js", { scope: "/" })
         .then((registration) => {
-          console.log("✓ Service Worker registered successfully", registration);
+          console.log("Service Worker registered successfully", registration);
+          registration.update();
 
-          // Check for updates periodically (every hour)
+          // Check for updates periodically and whenever the app returns to the foreground.
           setInterval(() => {
             registration.update();
           }, 60 * 60 * 1000);
+
+          document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") {
+              registration.update();
+            }
+          });
         })
         .catch((error) => {
-          console.error("✗ Service Worker registration failed:", error);
+          console.error("Service Worker registration failed:", error);
         });
     });
 
     // Listen for controller change (SW update)
-    let refreshing: boolean;
+    let refreshing = false;
     navigator.serviceWorker.addEventListener("controllerchange", () => {
       if (refreshing) return;
       refreshing = true;
-      console.log("✓ Service Worker updated, reloading app...");
+      console.log("Service Worker updated, reloading app...");
       window.location.reload();
     });
   }
@@ -41,9 +48,9 @@ export async function enableBackgroundSync() {
     try {
       const registration = await navigator.serviceWorker.ready;
       await (registration as any).sync.register("sync-data");
-      console.log("✓ Background sync enabled");
+      console.log("Background sync enabled");
     } catch (error) {
-      console.error("✗ Background sync registration failed:", error);
+      console.error("Background sync registration failed:", error);
     }
   }
 }
