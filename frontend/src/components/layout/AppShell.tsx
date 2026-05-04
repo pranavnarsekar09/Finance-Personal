@@ -78,23 +78,29 @@ export default function AppShell() {
 
   return (
     <SheetContext.Provider value={{ setMealOpen, setAddOpen, setChatOpen, setAnalyzeOpen }}>
-      <div className="min-h-screen bg-gradient-cream grain">
-        <div className="mx-auto max-w-md md:max-w-2xl pb-32 px-5 pt-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={active}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <Active />
-            </motion.div>
-          </AnimatePresence>
+      <div className="min-h-screen overflow-x-hidden bg-gradient-cream grain isolate">
+        <div
+          data-swipe-scope="true"
+          className="mx-auto max-w-md overflow-x-hidden md:max-w-2xl pb-32 px-5 pt-6 touch-pan-y"
+        >
+          <div className="overflow-x-hidden">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={active}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                style={{ willChange: "transform, opacity", transform: "translateZ(0)" }}
+              >
+                <Active />
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* Floating action cluster */}
-        <div className="fixed bottom-28 right-5 z-40 flex flex-col gap-3">
+        <div className="fixed bottom-28 right-5 z-40 flex flex-col gap-3 transform-gpu [will-change:transform]">
           <button
             onClick={() => setChatOpen(true)}
             aria-label="Open AI chat"
@@ -112,7 +118,7 @@ export default function AppShell() {
         </div>
 
         {/* Bottom nav */}
-        <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30">
+        <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 transform-gpu [will-change:transform]">
           <div className="bg-card/90 backdrop-blur-xl shadow-float rounded-full px-2 py-2 flex gap-1 border border-border/40">
             {tabs.map((t) => {
               const Icon = t.icon;

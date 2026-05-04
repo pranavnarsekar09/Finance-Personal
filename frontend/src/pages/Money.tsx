@@ -33,9 +33,9 @@ export default function Money() {
   const [search, setSearch] = useState("");
 
   const pageVariants = {
-    initial: (dir: number) => ({ x: dir > 0 ? 40 : -40, opacity: 0 }),
+    initial: (dir: number) => ({ x: dir > 0 ? 20 : -20, opacity: 0 }),
     animate: { x: 0, opacity: 1, transition: { duration: 0.24, ease: "easeOut" } },
-    exit: (dir: number) => ({ x: dir > 0 ? -40 : 40, opacity: 0, transition: { duration: 0.18, ease: "easeIn" } }),
+    exit: (dir: number) => ({ x: dir > 0 ? -20 : 20, opacity: 0, transition: { duration: 0.18, ease: "easeIn" } }),
   };
 
   const changeView = (nextView: "list" | "calendar") => {

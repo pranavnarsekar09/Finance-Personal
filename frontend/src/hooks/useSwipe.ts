@@ -3,9 +3,13 @@ import { useEffect, useRef } from "react";
 interface UseSwipeOptions {
   onSwipeLeft?: () => void;
   onSwipeRight?: () => void;
-  threshold?: number; // minimum distance in pixels
+  threshold?: number;
   ignoreSelector?: string;
+  scopeSelector?: string;
 }
+
+const VERTICAL_SCROLL_TOLERANCE = 24;
+const HORIZONTAL_INTENT_RATIO = 1.2;
 
 const shouldIgnoreSwipe = (target: EventTarget | null, ignoreSelector?: string) => {
   if (!ignoreSelector || !(target instanceof Element)) {
@@ -23,127 +27,140 @@ const shouldIgnoreSwipe = (target: EventTarget | null, ignoreSelector?: string) 
   return false;
 };
 
-/**
- * Hook for detecting left/right swipe gestures
- */
-export function useSwipe({
-  onSwipeLeft,
-  onSwipeRight,
-  threshold = 50,
-  ignoreSelector,
-}: UseSwipeOptions) {
-  const touchStartX = useRef(0);
-  const touchEndX = useRef(0);
-  const ignoreSwipe = useRef(false);
-
-  const handleTouchStart = (e: TouchEvent) => {
-    ignoreSwipe.current = shouldIgnoreSwipe(e.target, ignoreSelector);
-    if (ignoreSwipe.current) return;
-    touchStartX.current = e.changedTouches[0].screenX;
-  };
-
-  const handleTouchEnd = (e: TouchEvent) => {
-    if (ignoreSwipe.current) {
-      ignoreSwipe.current = false;
-      return;
-    }
-    touchEndX.current = e.changedTouches[0].screenX;
-    handleSwipe();
-  };
-
-  const handleSwipe = () => {
-    const distance = touchStartX.current - touchEndX.current;
-    const isLeftSwipe = distance > threshold;
-    const isRightSwipe = distance < -threshold;
-
-    if (isLeftSwipe && onSwipeLeft) {
-      onSwipeLeft();
-    } else if (isRightSwipe && onSwipeRight) {
-      onSwipeRight();
-    }
-  };
-
-  useEffect(() => {
-    const element = document.querySelector("body");
-    if (!element) return;
-
-    element.addEventListener("touchstart", handleTouchStart);
-    element.addEventListener("touchend", handleTouchEnd);
-
-    return () => {
-      element.removeEventListener("touchstart", handleTouchStart);
-      element.removeEventListener("touchend", handleTouchEnd);
-    };
-  }, [onSwipeLeft, onSwipeRight, threshold, ignoreSelector]);
+export function useSwipe(options: UseSwipeOptions) {
+  useSwipeNative(options);
 }
 
-/**
- * Hook for browser-based swipe detection with mouse fallback
- */
 export function useSwipeNative({
   onSwipeLeft,
   onSwipeRight,
-  threshold = 50,
+  threshold = 44,
   ignoreSelector,
+  scopeSelector = "[data-swipe-scope='true']",
 }: UseSwipeOptions) {
-  const startX = useRef(0);
-  const startY = useRef(0);
-  const isMouseDown = useRef(false);
-  const ignoreSwipe = useRef(false);
+  const callbacksRef = useRef({ onSwipeLeft, onSwipeRight, threshold, ignoreSelector, scopeSelector });
+  const gestureRef = useRef({
+    startX: 0,
+    startY: 0,
+    lastX: 0,
+    lastY: 0,
+    active: false,
+    ignore: false,
+  });
 
-  const handleStart = (x: number, y: number, target?: EventTarget | null) => {
-    ignoreSwipe.current = shouldIgnoreSwipe(target, ignoreSelector);
-    if (ignoreSwipe.current) {
-      return;
-    }
-
-    startX.current = x;
-    startY.current = y;
-    isMouseDown.current = true;
-  };
-
-  const handleEnd = (x: number, y: number) => {
-    if (!isMouseDown.current || ignoreSwipe.current) {
-      ignoreSwipe.current = false;
-      isMouseDown.current = false;
-      return;
-    }
-    isMouseDown.current = false;
-
-    const distX = startX.current - x;
-    const distY = startY.current - y;
-
-    // Only trigger if vertical movement is minimal (swiping, not scrolling)
-    if (Math.abs(distY) > Math.abs(distX)) return;
-
-    if (distX > threshold && onSwipeLeft) {
-      onSwipeLeft();
-    } else if (distX < -threshold && onSwipeRight) {
-      onSwipeRight();
-    }
-  };
+  callbacksRef.current = { onSwipeLeft, onSwipeRight, threshold, ignoreSelector, scopeSelector };
 
   useEffect(() => {
-    const element = document.querySelector("body");
+    const element = document.querySelector(scopeSelector) ?? document.body;
     if (!element) return;
 
-    const handleMouseDown = (e: MouseEvent) => handleStart(e.clientX, e.clientY, e.target);
-    const handleMouseUp = (e: MouseEvent) => handleEnd(e.clientX, e.clientY);
-    const handleTouchStart = (e: TouchEvent) =>
-      handleStart(e.touches[0].clientX, e.touches[0].clientY, e.target);
-    const handleTouchEnd = (e: TouchEvent) =>
-      handleEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+    const startGesture = (x: number, y: number, target?: EventTarget | null) => {
+      const { ignoreSelector: currentIgnoreSelector } = callbacksRef.current;
+      const ignore = shouldIgnoreSwipe(target, currentIgnoreSelector);
+
+      gestureRef.current = {
+        startX: x,
+        startY: y,
+        lastX: x,
+        lastY: y,
+        active: !ignore,
+        ignore,
+      };
+    };
+
+    const moveGesture = (x: number, y: number) => {
+      if (!gestureRef.current.active) {
+        return;
+      }
+
+      gestureRef.current.lastX = x;
+      gestureRef.current.lastY = y;
+    };
+
+    const endGesture = (x?: number, y?: number) => {
+      const current = gestureRef.current;
+      if (!current.active || current.ignore) {
+        gestureRef.current.active = false;
+        gestureRef.current.ignore = false;
+        return;
+      }
+
+      const endX = x ?? current.lastX;
+      const endY = y ?? current.lastY;
+      const distX = current.startX - endX;
+      const distY = current.startY - endY;
+      const absX = Math.abs(distX);
+      const absY = Math.abs(distY);
+
+      gestureRef.current.active = false;
+      gestureRef.current.ignore = false;
+
+      if (absY > VERTICAL_SCROLL_TOLERANCE && absY > absX * HORIZONTAL_INTENT_RATIO) {
+        return;
+      }
+
+      const { onSwipeLeft: left, onSwipeRight: right, threshold: currentThreshold } = callbacksRef.current;
+      if (distX > currentThreshold && left) {
+        left();
+      } else if (distX < -currentThreshold && right) {
+        right();
+      }
+    };
+
+    const cancelGesture = () => {
+      gestureRef.current.active = false;
+      gestureRef.current.ignore = false;
+    };
+
+    const handleMouseDown = (e: MouseEvent) => startGesture(e.clientX, e.clientY, e.target);
+    const handleMouseMove = (e: MouseEvent) => moveGesture(e.clientX, e.clientY);
+    const handleMouseUp = (e: MouseEvent) => endGesture(e.clientX, e.clientY);
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) {
+        cancelGesture();
+        return;
+      }
+
+      startGesture(e.touches[0].clientX, e.touches[0].clientY, e.target);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length !== 1) {
+        cancelGesture();
+        return;
+      }
+
+      moveGesture(e.touches[0].clientX, e.touches[0].clientY);
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (e.changedTouches.length === 0) {
+        endGesture();
+        return;
+      }
+
+      endGesture(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+    };
 
     element.addEventListener("mousedown", handleMouseDown);
+    element.addEventListener("mousemove", handleMouseMove);
     element.addEventListener("mouseup", handleMouseUp);
-    element.addEventListener("touchstart", handleTouchStart);
-    element.addEventListener("touchend", handleTouchEnd);
+    element.addEventListener("mouseleave", cancelGesture);
+    element.addEventListener("touchstart", handleTouchStart, { passive: true });
+    element.addEventListener("touchmove", handleTouchMove, { passive: true });
+    element.addEventListener("touchend", handleTouchEnd, { passive: true });
+    element.addEventListener("touchcancel", cancelGesture, { passive: true });
 
     return () => {
       element.removeEventListener("mousedown", handleMouseDown);
+      element.removeEventListener("mousemove", handleMouseMove);
       element.removeEventListener("mouseup", handleMouseUp);
+      element.removeEventListener("mouseleave", cancelGesture);
       element.removeEventListener("touchstart", handleTouchStart);
+      element.removeEventListener("touchmove", handleTouchMove);
       element.removeEventListener("touchend", handleTouchEnd);
+      element.removeEventListener("touchcancel", cancelGesture);
     };
-  }, [onSwipeLeft, onSwipeRight, threshold, ignoreSelector]);
+  }, [scopeSelector]);
 }

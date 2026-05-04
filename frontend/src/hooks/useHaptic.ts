@@ -1,25 +1,54 @@
 /**
  * Hook for triggering haptic feedback (vibration)
- * Provides cross-browser support with fallbacks
+ * Keeps feedback light and avoids spamming the device with overlapping calls.
  */
+
+const MIN_VIBRATION_GAP_MS = 80;
+let lastVibrationAt = 0;
+
+function canVibrate() {
+  return typeof navigator !== "undefined" && typeof navigator.vibrate === "function";
+}
+
+function performVibration(pattern: number | number[] = 10) {
+  if (!canVibrate()) {
+    return false;
+  }
+
+  const now = Date.now();
+  if (now - lastVibrationAt < MIN_VIBRATION_GAP_MS) {
+    return false;
+  }
+
+  lastVibrationAt = now;
+
+  try {
+    return navigator.vibrate(pattern);
+  } catch (error) {
+    console.warn("Haptic feedback not supported:", error);
+    return false;
+  }
+}
 
 export function useHaptic() {
   const vibrate = (pattern: number | number[] = 10) => {
-    if (typeof navigator !== "undefined" && navigator.vibrate) {
-      try {
-        navigator.vibrate(pattern);
-      } catch (error) {
-        console.warn("Haptic feedback not supported:", error);
-      }
+    // Run on the next frame so it stays tied to the completed swipe/tab change.
+    if (typeof window !== "undefined") {
+      window.requestAnimationFrame(() => {
+        performVibration(pattern);
+      });
+      return;
     }
+
+    performVibration(pattern);
   };
 
   const light = () => vibrate(10);
   const medium = () => vibrate(20);
   const heavy = () => vibrate(30);
-  const success = () => vibrate([10, 20, 10]); // double tap pattern
-  const warning = () => vibrate([30, 10, 30]); // urgent pattern
-  const error = () => vibrate([50, 20, 50, 20, 50]); // error pattern
+  const success = () => vibrate([10, 20, 10]);
+  const warning = () => vibrate([30, 10, 30]);
+  const error = () => vibrate([50, 20, 50, 20, 50]);
 
   return {
     vibrate,
@@ -32,23 +61,10 @@ export function useHaptic() {
   };
 }
 
-/**
- * Trigger a simple haptic feedback immediately
- * Useful for imperative calls without needing the hook
- */
 export function triggerHaptic(pattern: number | number[] = 10) {
-  if (typeof navigator !== "undefined" && navigator.vibrate) {
-    try {
-      navigator.vibrate(pattern);
-    } catch (error) {
-      console.warn("Haptic feedback not supported:", error);
-    }
-  }
+  performVibration(pattern);
 }
 
-/**
- * Haptic feedback patterns for common UI interactions
- */
 export const hapticPatterns = {
   tap: 10,
   select: [10, 20, 10],
