@@ -56,6 +56,7 @@ export default function Money() {
       }
     },
     threshold: 50,
+    scopeSelector: "[data-money-swipe='true']",
   });
 
   const filteredExpenses = (expenses || []).filter((e: Expense) => {
@@ -86,7 +87,7 @@ export default function Money() {
   const handleNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
 
   return (
-    <div className="space-y-5">
+    <div data-money-swipe="true" className="space-y-5 touch-pan-y">
       <div className="flex justify-between items-center">
         <div className="bg-card/70 backdrop-blur rounded-full p-1 flex shadow-soft">
           {(["list", "calendar"] as const).map((t) => (

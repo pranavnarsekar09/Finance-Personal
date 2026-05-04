@@ -45,6 +45,7 @@ export default function Health() {
       }
     },
     threshold: 50,
+    scopeSelector: "[data-health-swipe='true']",
   });
 
   const todaysLogs = (foodLogs || []).filter((l: FoodLog) => l.date === todayStr);
@@ -117,7 +118,7 @@ export default function Health() {
   }, [foodLogs]);
 
   return (
-    <div className="space-y-5">
+    <div data-health-swipe="true" className="space-y-5 touch-pan-y">
       <div className="flex justify-between items-center">
         <div className="bg-card/70 backdrop-blur rounded-full p-1 flex shadow-soft">
           <button 

@@ -69,6 +69,7 @@ export default function Home() {
     },
     threshold: 50,
     ignoreSelector: "[data-swipe-ignore]",
+    scopeSelector: "[data-home-swipe='true']",
   });
 
   const profile = profileQuery.data;
@@ -79,7 +80,7 @@ export default function Home() {
   const shellMessage = getShellMessage(profileQuery.isLoading, dashboardQuery.isLoading);
 
   return (
-    <div className="space-y-5">
+    <div data-home-swipe="true" className="space-y-5 touch-pan-y">
       <div className="flex justify-between items-center">
         <div className="bg-card/70 backdrop-blur rounded-full p-1 flex shadow-soft">
           {HOME_TABS.map((t) => (
