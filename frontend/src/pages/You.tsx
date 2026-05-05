@@ -1,9 +1,13 @@
 import { useState } from "react";
-import { Check, Plus, Sun, Moon, AlertCircle, Edit2, Trash2 } from "lucide-react";
+import { Check, Plus, Sun, Moon, AlertCircle, Edit2, Trash2, Download, FileText, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
-import { useGoals, useProfile, useSaveProfile, useSaveCategories } from "@/hooks/useApi";
+import { useGoals, useProfile, useSaveProfile, useSaveCategories, useExpenses, useFoodLogs, useFinance, useDashboard } from "@/hooks/useApi";
 import { formatRupees } from "@/lib/utils";
 import type { Goal, UserCategory } from "@/lib/types";
+import { format, subMonths } from "date-fns";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +24,16 @@ export default function You() {
   const { data: goals, isLoading: goalsLoading } = useGoals();
   const saveProfile = useSaveProfile();
   const saveCategories = useSaveCategories();
+  
+  // Get current month and last 11 months for data export
+  const currentMonth = format(new Date(), "yyyy-MM");
+  const monthsToFetch = Array.from({ length: 12 }, (_, i) => format(subMonths(new Date(), 11 - i), "yyyy-MM"));
+  
+  const expensesQueries = monthsToFetch.map(month => useExpenses(profile?.userId || "", month));
+  const foodLogsQueries = monthsToFetch.map(month => useFoodLogs(profile?.userId || "", month));
+  
+  const { data: finance } = useFinance(profile?.userId || "");
+  const { data: dashboard } = useDashboard(profile?.userId || "", currentMonth);
   
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
@@ -115,6 +129,400 @@ export default function You() {
       toast.success("Category deleted");
     } catch (err: any) {
       toast.error(`Failed to delete: ${err.message}`);
+    }
+  };
+
+  const exportDataAsJSON = async () => {
+    try {
+      // Collect all expenses from the last 12 months
+      const allExpenses = expensesQueries
+        .flatMap(query => query.data || [])
+        .filter((expense, index, self) => 
+          self.findIndex(e => e.id === expense.id) === index // Remove duplicates
+        );
+
+      // Collect all food logs from the last 12 months
+      const allFoodLogs = foodLogsQueries
+        .flatMap(query => query.data || [])
+        .filter((log, index, self) => 
+          self.findIndex(l => l.id === log.id) === index // Remove duplicates
+        );
+
+      const dataToExport = {
+        profile,
+        goals,
+        finance,
+        dashboard,
+        expenses: allExpenses,
+        foodLogs: allFoodLogs,
+        exportedAt: new Date().toISOString(),
+        version: "1.0",
+        exportPeriod: {
+          months: monthsToFetch,
+          totalExpenses: allExpenses.length,
+          totalFoodLogs: allFoodLogs.length
+        }
+      };
+
+      const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tracker-data-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success(`Data exported! ${allExpenses.length} expenses, ${allFoodLogs.length} food logs`);
+    } catch (err: any) {
+      toast.error(`Failed to export data: ${err.message}`);
+    }
+  };
+
+  const exportDataAsPDF = async () => {
+    try {
+      // Collect all expenses from the last 12 months
+      const allExpenses = expensesQueries
+        .flatMap(query => query.data || [])
+        .filter((expense, index, self) => 
+          self.findIndex(e => e.id === expense.id) === index // Remove duplicates
+        );
+
+      // Collect all food logs from the last 12 months
+      const allFoodLogs = foodLogsQueries
+        .flatMap(query => query.data || [])
+        .filter((log, index, self) => 
+          self.findIndex(l => l.id === log.id) === index // Remove duplicates
+        );
+
+      // Helper function for PDF formatting (avoid special characters)
+      const formatAmountForPDF = (value: number) => `Rs. ${value.toLocaleString('en-IN')}`;
+
+      const doc = new jsPDF();
+      
+      // Title
+      doc.setFontSize(20);
+      doc.text('Personal Finance Tracker - Data Export', 20, 20);
+      doc.setFontSize(12);
+      doc.text(`Exported on: ${new Date().toLocaleDateString()}`, 20, 30);
+      doc.text(`User: ${profile?.name || 'N/A'}`, 20, 40);
+
+      let yPosition = 50;
+
+      // Profile Summary
+      if (profile) {
+        doc.setFontSize(16);
+        doc.text('Profile Summary', 20, yPosition);
+        yPosition += 10;
+        
+        const profileData = [
+          ['Name', profile.name],
+          ['Email', profile.email],
+          ['Monthly Budget', formatAmountForPDF(profile.monthlyBudget)],
+          ['Daily Calories', profile.calorieGoal.toString()],
+        ];
+        
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['Field', 'Value']],
+          body: profileData,
+          margin: { left: 20 },
+        });
+        
+        yPosition = (doc as any).lastAutoTable.finalY + 20;
+      }
+
+      // Categories
+      if (profile?.categories && profile.categories.length > 0) {
+        if (yPosition > 250) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        
+        doc.setFontSize(16);
+        doc.text('Categories', 20, yPosition);
+        yPosition += 10;
+        
+        const categoryData = profile.categories.map(cat => [
+          cat.name,
+          formatAmountForPDF(cat.budget)
+        ]);
+        
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['Category', 'Budget']],
+          body: categoryData,
+          margin: { left: 20 },
+        });
+        
+        yPosition = (doc as any).lastAutoTable.finalY + 20;
+      }
+
+      // Goals
+      if (goals && goals.length > 0) {
+        if (yPosition > 200) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        
+        doc.setFontSize(16);
+        doc.text('Goals', 20, yPosition);
+        yPosition += 10;
+        
+        const goalData = goals.map(goal => [
+          goal.type === 'SAVINGS' ? 'Savings' : 'Calorie',
+          goal.targetAmount.toString(),
+          goal.currentAmount.toString(),
+          new Date(goal.deadline).toLocaleDateString()
+        ]);
+        
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['Type', 'Target', 'Current', 'Deadline']],
+          body: goalData,
+          margin: { left: 20 },
+        });
+        
+        yPosition = (doc as any).lastAutoTable.finalY + 20;
+      }
+
+      // Recent Expenses (last 50 for PDF)
+      if (allExpenses.length > 0) {
+        doc.addPage();
+        yPosition = 20;
+        
+        doc.setFontSize(16);
+        doc.text('Recent Expenses', 20, yPosition);
+        yPosition += 10;
+        
+        const expenseData = allExpenses.slice(0, 50).map(expense => [
+          new Date(expense.date).toLocaleDateString(),
+          expense.categoryName,
+          formatAmountForPDF(expense.amount),
+          expense.paymentMethod,
+          expense.note || ''
+        ]);
+        
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['Date', 'Category', 'Amount', 'Payment', 'Note']],
+          body: expenseData,
+          margin: { left: 20 },
+        });
+        
+        if (allExpenses.length > 50) {
+          yPosition = (doc as any).lastAutoTable.finalY + 10;
+          doc.setFontSize(10);
+          doc.text(`Showing first 50 of ${allExpenses.length} expenses`, 20, yPosition);
+        }
+      }
+
+      // Recent Food Logs (last 50 for PDF)
+      if (allFoodLogs.length > 0) {
+        doc.addPage();
+        yPosition = 20;
+        
+        doc.setFontSize(16);
+        doc.text('Recent Food Logs', 20, yPosition);
+        yPosition += 10;
+        
+        const foodData = allFoodLogs.slice(0, 50).map(log => [
+          new Date(log.date).toLocaleDateString(),
+          log.foodName,
+          log.calories.toString(),
+          log.protein.toString(),
+          log.carbs.toString(),
+          log.fat.toString(),
+          formatAmountForPDF(log.estimatedCost)
+        ]);
+        
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['Date', 'Food', 'Calories', 'Protein', 'Carbs', 'Fat', 'Cost']],
+          body: foodData,
+          margin: { left: 20 },
+        });
+        
+        if (allFoodLogs.length > 50) {
+          yPosition = (doc as any).lastAutoTable.finalY + 10;
+          doc.setFontSize(10);
+          doc.text(`Showing first 50 of ${allFoodLogs.length} food logs`, 20, yPosition);
+        }
+      }
+
+      // Save the PDF
+      doc.save(`tracker-data-${new Date().toISOString().split('T')[0]}.pdf`);
+      
+      toast.success('PDF exported successfully!');
+    } catch (err: any) {
+      toast.error(`Failed to export PDF: ${err.message}`);
+    }
+  };
+
+  const exportDataAsExcel = async () => {
+    try {
+      // Collect all expenses from the last 12 months
+      const allExpenses = expensesQueries
+        .flatMap(query => query.data || [])
+        .filter((expense, index, self) => 
+          self.findIndex(e => e.id === expense.id) === index // Remove duplicates
+        );
+
+      // Collect all food logs from the last 12 months
+      const allFoodLogs = foodLogsQueries
+        .flatMap(query => query.data || [])
+        .filter((log, index, self) => 
+          self.findIndex(l => l.id === log.id) === index // Remove duplicates
+        );
+
+      const workbook = XLSX.utils.book_new();
+
+      // Profile Sheet
+      if (profile) {
+        const profileData = [
+          ['Field', 'Value'],
+          ['Name', profile.name],
+          ['Email', profile.email],
+          ['Monthly Budget', profile.monthlyBudget],
+          ['Daily Calories', profile.calorieGoal],
+          ['User ID', profile.userId],
+          ['Created At', new Date(profile.createdAt).toLocaleString()],
+          ['Onboarding Complete', profile.onboardingComplete ? 'Yes' : 'No']
+        ];
+        const profileSheet = XLSX.utils.aoa_to_sheet(profileData);
+        XLSX.utils.book_append_sheet(workbook, profileSheet, 'Profile');
+      }
+
+      // Categories Sheet
+      if (profile?.categories && profile.categories.length > 0) {
+        const categoryData = [
+          ['Category Name', 'Budget Amount'],
+          ...profile.categories.map(cat => [cat.name, cat.budget])
+        ];
+        const categorySheet = XLSX.utils.aoa_to_sheet(categoryData);
+        XLSX.utils.book_append_sheet(workbook, categorySheet, 'Categories');
+      }
+
+      // Goals Sheet
+      if (goals && goals.length > 0) {
+        const goalData = [
+          ['Type', 'Target Amount', 'Current Amount', 'Deadline', 'Progress (%)', 'Created At'],
+          ...goals.map(goal => [
+            goal.type === 'SAVINGS' ? 'Savings Goal' : 'Calorie Goal',
+            goal.targetAmount,
+            goal.currentAmount,
+            new Date(goal.deadline).toLocaleDateString(),
+            goal.progress ? goal.progress.toFixed(1) : '0.0',
+            new Date(goal.createdAt).toLocaleString()
+          ])
+        ];
+        const goalSheet = XLSX.utils.aoa_to_sheet(goalData);
+        XLSX.utils.book_append_sheet(workbook, goalSheet, 'Goals');
+      }
+
+      // Expenses Sheet
+      if (allExpenses.length > 0) {
+        const expenseData = [
+          ['Date', 'Category', 'Amount', 'Payment Method', 'Note', 'Recurring', 'Created At'],
+          ...allExpenses.map(expense => [
+            new Date(expense.date).toLocaleDateString(),
+            expense.categoryName,
+            expense.amount,
+            expense.paymentMethod,
+            expense.note || '',
+            expense.isRecurring ? 'Yes' : 'No',
+            new Date(expense.createdAt).toLocaleString()
+          ])
+        ];
+        const expenseSheet = XLSX.utils.aoa_to_sheet(expenseData);
+        XLSX.utils.book_append_sheet(workbook, expenseSheet, 'Expenses');
+      }
+
+      // Food Logs Sheet
+      if (allFoodLogs.length > 0) {
+        const foodData = [
+          ['Date', 'Food Name', 'Calories', 'Protein (g)', 'Carbs (g)', 'Fat (g)', 'Estimated Cost', 'Note', 'Created At'],
+          ...allFoodLogs.map(log => [
+            new Date(log.date).toLocaleDateString(),
+            log.foodName,
+            log.calories,
+            log.protein,
+            log.carbs,
+            log.fat,
+            log.estimatedCost,
+            log.note || '',
+            new Date(log.createdAt).toLocaleString()
+          ])
+        ];
+        const foodSheet = XLSX.utils.aoa_to_sheet(foodData);
+        XLSX.utils.book_append_sheet(workbook, foodSheet, 'Food Logs');
+      }
+
+      // Finance Sheet
+      if (finance) {
+        const financeData = [
+          ['Field', 'Value'],
+          ['Daily Budget', finance.dailyBudget || 'N/A'],
+          ['Weekly Budget', finance.weeklyBudget || 'N/A'],
+          ['Monthly Budget', finance.monthlyBudget || 'N/A'],
+          ['Savings Goal', finance.savingsGoal || 'N/A'],
+          ['Current Savings', finance.currentSavings || 'N/A']
+        ];
+        const financeSheet = XLSX.utils.aoa_to_sheet(financeData);
+        XLSX.utils.book_append_sheet(workbook, financeSheet, 'Finance');
+      }
+
+      // Dashboard Summary Sheet
+      if (dashboard) {
+        const dashboardData = [
+          ['Field', 'Value'],
+          ['Monthly Budget', dashboard.monthlyBudget],
+          ['Total Spent', dashboard.totalSpent],
+          ['Remaining Budget', dashboard.remainingBudget],
+          ['Daily Calories Goal', dashboard.calorieGoal],
+          ['Calories Today', dashboard.caloriesToday],
+          ['Monthly Food Cost', dashboard.monthlyFoodCost],
+          ['Streak', dashboard.streak]
+        ];
+        const dashboardSheet = XLSX.utils.aoa_to_sheet(dashboardData);
+        XLSX.utils.book_append_sheet(workbook, dashboardSheet, 'Dashboard');
+
+        // Category Spending Sheet
+        if (dashboard.categorySpending && dashboard.categorySpending.length > 0) {
+          const categorySpendingData = [
+            ['Category', 'Budget', 'Spent', 'Progress (%)'],
+            ...dashboard.categorySpending.map(cat => [
+              cat.categoryName,
+              cat.budget,
+              cat.spent,
+              cat.progress ? cat.progress.toFixed(1) : '0.0'
+            ])
+          ];
+          const categorySpendingSheet = XLSX.utils.aoa_to_sheet(categorySpendingData);
+          XLSX.utils.book_append_sheet(workbook, categorySpendingSheet, 'Category Spending');
+        }
+
+        // Daily Spending Sheet
+        if (dashboard.dailySpending && dashboard.dailySpending.length > 0) {
+          const dailySpendingData = [
+            ['Date', 'Amount'],
+            ...dashboard.dailySpending.map(day => [
+              new Date(day.date).toLocaleDateString(),
+              day.amount
+            ])
+          ];
+          const dailySpendingSheet = XLSX.utils.aoa_to_sheet(dailySpendingData);
+          XLSX.utils.book_append_sheet(workbook, dailySpendingSheet, 'Daily Spending');
+        }
+      }
+
+      // Save the Excel file
+      XLSX.writeFile(workbook, `tracker-data-${new Date().toISOString().split('T')[0]}.xlsx`);
+      
+      toast.success('Excel file exported successfully!');
+    } catch (err: any) {
+      toast.error(`Failed to export Excel: ${err.message}`);
     }
   };
 
@@ -261,6 +669,41 @@ export default function You() {
               )}
             </button>
           ))}
+        </div>
+      </div>
+
+      <div>
+        <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Data Management</div>
+        <div className="space-y-3">
+          <div className="bg-card rounded-2xl shadow-soft p-4">
+            <div className="text-sm font-semibold mb-3">Export Your Data</div>
+            <p className="text-xs text-muted-foreground mb-4">
+              Download all your transactions, goals, and profile data in your preferred format.
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={exportDataAsJSON}
+                className="flex flex-col items-center gap-2 p-3 bg-secondary rounded-xl hover:bg-secondary/80 transition"
+              >
+                <FileText className="h-5 w-5 text-primary" />
+                <span className="text-xs font-medium">JSON</span>
+              </button>
+              <button
+                onClick={exportDataAsPDF}
+                className="flex flex-col items-center gap-2 p-3 bg-secondary rounded-xl hover:bg-secondary/80 transition"
+              >
+                <Download className="h-5 w-5 text-primary" />
+                <span className="text-xs font-medium">PDF</span>
+              </button>
+              <button
+                onClick={exportDataAsExcel}
+                className="flex flex-col items-center gap-2 p-3 bg-secondary rounded-xl hover:bg-secondary/80 transition"
+              >
+                <FileSpreadsheet className="h-5 w-5 text-primary" />
+                <span className="text-xs font-medium">Excel</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
