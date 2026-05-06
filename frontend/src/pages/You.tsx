@@ -577,7 +577,7 @@ export default function You() {
         <button className="text-xs text-primary font-medium">Edit</button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <div className="bg-card rounded-2xl shadow-soft p-4">
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Monthly Budget</div>
           <div className="font-display text-2xl font-bold mt-1">{formatRupees(profile.monthlyBudget)}</div>
@@ -585,32 +585,6 @@ export default function You() {
         <div className="bg-card rounded-2xl shadow-soft p-4">
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Daily Calories</div>
           <div className="font-display text-2xl font-bold mt-1">{profile.calorieGoal.toLocaleString()}</div>
-        </div>
-        <div className="bg-card rounded-2xl shadow-soft p-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">MongoDB Storage</div>
-              <div className="font-display text-2xl font-bold mt-1">
-                {storageUsage ? formatBytes(storageUsage.usedBytes) : storageUsageLoading ? "Calculating..." : "Unavailable"}
-              </div>
-            </div>
-            <div className="text-right text-xs text-muted-foreground">
-              {storageUsage ? `${Math.round(storageUsage.usedPercentage)}%` : "--"}
-            </div>
-          </div>
-          <div className="h-3 w-full bg-secondary rounded-full overflow-hidden mt-4">
-            <div
-              className="h-full bg-gradient-mint rounded-full transition-all duration-300"
-              style={{ width: `${storageUsage?.usedPercentage ?? 0}%` }}
-            />
-          </div>
-          <div className="text-xs text-muted-foreground mt-2">
-            {storageUsage
-              ? `${formatBytes(storageUsage.usedBytes)} of ${formatBytes(storageUsage.totalBytes)} used`
-              : storageUsageLoading
-              ? "Checking storage usage..."
-              : "Storage data unavailable"}
-          </div>
         </div>
       </div>
 
@@ -704,6 +678,33 @@ export default function You() {
       <div>
         <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Data Management</div>
         <div className="space-y-3">
+          <div className="bg-card rounded-2xl shadow-soft p-4">
+            <div className="text-sm font-semibold mb-3">Storage Usage</div>
+            <div className="flex items-center justify-between gap-4 mb-4">
+              <div>
+                <div className="text-xs text-muted-foreground">MongoDB Atlas</div>
+                <div className="font-display text-xl font-bold mt-1">
+                  {storageUsage ? formatBytes(storageUsage.usedBytes) : storageUsageLoading ? "Calculating..." : "Unavailable"}
+                </div>
+              </div>
+              <div className="text-right text-xs text-muted-foreground">
+                {storageUsage ? `${Math.round(storageUsage.usedPercentage)}%` : "--"}
+              </div>
+            </div>
+            <div className="h-3 w-full bg-secondary rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-mint rounded-full transition-all duration-300"
+                style={{ width: `${storageUsage?.usedPercentage ?? 0}%` }}
+              />
+            </div>
+            <div className="text-xs text-muted-foreground mt-2">
+              {storageUsage
+                ? `${formatBytes(storageUsage.usedBytes)} of ${formatBytes(storageUsage.totalBytes)} used`
+                : storageUsageLoading
+                ? "Checking storage usage..."
+                : "Storage data unavailable"}
+            </div>
+          </div>
           <div className="bg-card rounded-2xl shadow-soft p-4">
             <div className="text-sm font-semibold mb-3">Export Your Data</div>
             <p className="text-xs text-muted-foreground mb-4">

@@ -18,7 +18,7 @@ public class StorageController {
 
     public StorageController(
             MongoDatabaseFactory databaseFactory,
-            @Value("${app.storage-quota-bytes:5242880}") long storageQuotaBytes
+            @Value("${app.storage-quota-bytes:536870912}") long storageQuotaBytes
     ) {
         this.databaseFactory = databaseFactory;
         this.storageQuotaBytes = storageQuotaBytes;
