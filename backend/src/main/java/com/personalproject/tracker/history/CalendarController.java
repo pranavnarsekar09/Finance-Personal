@@ -28,8 +28,18 @@ public class CalendarController {
         calendarService.deleteExpensesByDate(userId, date);
     }
 
+    @DeleteMapping("/expenses/month")
+    public void deleteExpensesByMonth(@RequestParam String userId, @RequestParam String month) {
+        calendarService.deleteExpensesByMonth(userId, month);
+    }
+
     @DeleteMapping("/meals")
     public void deleteMeals(@RequestParam String userId, @RequestParam String date) {
         calendarService.deleteMealsByDate(userId, date);
+    }
+
+    @DeleteMapping("/meals/month")
+    public void deleteMealsByMonth(@RequestParam String userId, @RequestParam String month) {
+        calendarService.deleteMealsByMonth(userId, month);
     }
 }

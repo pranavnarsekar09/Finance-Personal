@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Search, ChevronLeft, ChevronRight, Car, ShoppingBag, Utensils, Zap, Coffee, Trash2 } from "lucide-react";
-import { useExpenses, useCalendar, useProfile, useDeleteExpense } from "@/hooks/useApi";
+import { Search, ChevronLeft, ChevronRight, Car, ShoppingBag, Utensils, Zap, Coffee, Trash2, AlertTriangle } from "lucide-react";
+import { useExpenses, useCalendar, useProfile, useDeleteExpense, useDeleteExpensesByMonth } from "@/hooks/useApi";
 import { useSwipeNative } from "@/hooks/useSwipe";
 import { useHaptic } from "@/hooks/useHaptic";
 import { format, parseISO, isToday, isYesterday, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isSameDay } from "date-fns";
@@ -165,7 +165,7 @@ export default function Money() {
                   <ChevronRight className="h-5 w-5" />
                 </button>
               </div>
-              <CalendarGrid monthStr={monthStr} />
+              <CalendarGrid monthStr={monthStr} currentMonth={currentMonth} />
             </div>
           )}
         </motion.div>
@@ -212,12 +212,12 @@ function ExpenseItem({ t }: { t: Expense }) {
   );
 }
 
-function CalendarGrid({ monthStr }: { monthStr: string }) {
+function CalendarGrid({ monthStr, currentMonth }: { monthStr: string; currentMonth: Date }) {
   const { data: calendar, isLoading } = useCalendar(undefined, monthStr);
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const deleteExpense = useDeleteExpense();
+  const deleteExpensesByMonth = useDeleteExpensesByMonth();
   
-  const currentMonth = parseISO(monthStr + "-01");
   const days = useMemo(() => {
     const start = startOfMonth(currentMonth);
     const end = endOfMonth(currentMonth);
@@ -241,6 +241,17 @@ function CalendarGrid({ monthStr }: { monthStr: string }) {
         toast.success("Expense deleted");
       } catch (err: any) {
         toast.error("Failed to delete: " + err.message);
+      }
+    }
+  };
+
+  const handleDeleteMonth = async () => {
+    if (confirm(`Are you sure you want to delete ALL expenses for ${format(currentMonth, "MMMM yyyy")}? This cannot be undone.`)) {
+      try {
+        await deleteExpensesByMonth.mutateAsync(monthStr);
+        toast.success(`All expenses for ${format(currentMonth, "MMMM yyyy")} have been deleted`);
+      } catch (err: any) {
+        toast.error("Failed to delete month data: " + err.message);
       }
     }
   };
@@ -286,9 +297,19 @@ function CalendarGrid({ monthStr }: { monthStr: string }) {
             <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-1">Selected Day</div>
             <div className="font-display text-3xl font-bold">{format(parseISO(selectedDate), "MMM d")}</div>
           </div>
-          <div className="text-right">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-1">Total Spent</div>
-            <div className="font-display text-2xl font-bold text-coral">-{formatRupees(totalSpent)}</div>
+          <div className="text-right flex flex-col items-end gap-2">
+            <div>
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-1">Total Spent</div>
+              <div className="font-display text-2xl font-bold text-coral">-{formatRupees(totalSpent)}</div>
+            </div>
+            <button
+              onClick={handleDeleteMonth}
+              disabled={deleteExpensesByMonth.isPending}
+              className="text-xs px-2 py-1 rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20 transition disabled:opacity-50 flex items-center gap-1 font-medium"
+            >
+              <Trash2 className="h-3 w-3" />
+              Delete Month
+            </button>
           </div>
         </div>
 

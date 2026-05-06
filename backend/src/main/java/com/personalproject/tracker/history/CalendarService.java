@@ -53,7 +53,15 @@ public class CalendarService {
         expenseService.deleteExpensesByDate(userId, DateRangeUtils.parseDate(date));
     }
 
+    public void deleteExpensesByMonth(String userId, String month) {
+        expenseService.deleteExpensesByMonth(userId, month);
+    }
+
     public void deleteMealsByDate(String userId, String date) {
         foodService.deleteMealsByDate(userId, DateRangeUtils.parseDate(date));
+    }
+
+    public void deleteMealsByMonth(String userId, String month) {
+        foodService.deleteMealsByMonth(userId, month);
     }
 }

@@ -13,6 +13,7 @@ server:
 
 app:
   cors-origin: ${APP_CORS_ORIGIN:http://localhost:8080}
+  storage-quota-bytes: ${APP_STORAGE_QUOTA_BYTES:5242880}
   ai:
     gemini-api-key: ${GEMINI_API_KEY:}
 

@@ -120,6 +120,12 @@ export interface Insight {
   topCategory: string;
 }
 
+export interface StorageUsage {
+  usedBytes: number;
+  totalBytes: number;
+  usedPercentage: number;
+}
+
 export interface ChatResponse {
   response: string;
 }

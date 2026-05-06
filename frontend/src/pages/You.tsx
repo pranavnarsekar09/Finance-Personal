@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Check, Plus, Sun, Moon, AlertCircle, Edit2, Trash2, Download, FileText, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
-import { useGoals, useProfile, useSaveProfile, useSaveCategories, useExpenses, useFoodLogs, useFinance, useDashboard } from "@/hooks/useApi";
+import { useGoals, useProfile, useSaveProfile, useSaveCategories, useExpenses, useFoodLogs, useFinance, useDashboard, useStorageUsage } from "@/hooks/useApi";
 import { formatRupees } from "@/lib/utils";
 import type { Goal, UserCategory } from "@/lib/types";
 import { format, subMonths } from "date-fns";
@@ -34,6 +34,7 @@ export default function You() {
   
   const { data: finance } = useFinance(profile?.userId || "");
   const { data: dashboard } = useDashboard(profile?.userId || "", currentMonth);
+  const { data: storageUsage, isLoading: storageUsageLoading } = useStorageUsage(!!profile);
   
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
@@ -131,6 +132,8 @@ export default function You() {
       toast.error(`Failed to delete: ${err.message}`);
     }
   };
+
+  const formatBytes = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(2)} MB`;
 
   const exportDataAsJSON = async () => {
     try {
@@ -574,7 +577,7 @@ export default function You() {
         <button className="text-xs text-primary font-medium">Edit</button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="bg-card rounded-2xl shadow-soft p-4">
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Monthly Budget</div>
           <div className="font-display text-2xl font-bold mt-1">{formatRupees(profile.monthlyBudget)}</div>
@@ -582,6 +585,32 @@ export default function You() {
         <div className="bg-card rounded-2xl shadow-soft p-4">
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Daily Calories</div>
           <div className="font-display text-2xl font-bold mt-1">{profile.calorieGoal.toLocaleString()}</div>
+        </div>
+        <div className="bg-card rounded-2xl shadow-soft p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">MongoDB Storage</div>
+              <div className="font-display text-2xl font-bold mt-1">
+                {storageUsage ? formatBytes(storageUsage.usedBytes) : storageUsageLoading ? "Calculating..." : "Unavailable"}
+              </div>
+            </div>
+            <div className="text-right text-xs text-muted-foreground">
+              {storageUsage ? `${Math.round(storageUsage.usedPercentage)}%` : "--"}
+            </div>
+          </div>
+          <div className="h-3 w-full bg-secondary rounded-full overflow-hidden mt-4">
+            <div
+              className="h-full bg-gradient-mint rounded-full transition-all duration-300"
+              style={{ width: `${storageUsage?.usedPercentage ?? 0}%` }}
+            />
+          </div>
+          <div className="text-xs text-muted-foreground mt-2">
+            {storageUsage
+              ? `${formatBytes(storageUsage.usedBytes)} of ${formatBytes(storageUsage.totalBytes)} used`
+              : storageUsageLoading
+              ? "Checking storage usage..."
+              : "Storage data unavailable"}
+          </div>
         </div>
       </div>
 

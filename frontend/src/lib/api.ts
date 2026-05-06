@@ -4,6 +4,7 @@ import type {
   ChatResponse,
   CreateExpenseRequest,
   Finance,
+  StorageUsage,
   FinanceSettingsRequest,
   CreateFoodLogRequest,
   DashboardSummary,
@@ -125,12 +126,22 @@ export const api = {
     }),
   getCalendar: (userId: string, month: string) =>
     request<CalendarEntry[]>(`/api/history/calendar?userId=${encodeURIComponent(userId)}&month=${month}`),
+  getStorageUsage: () =>
+    request<StorageUsage>(`/api/system/storage`),
   deleteExpensesByDate: (userId: string, date: string) =>
     request<void>(`/api/history/calendar/expenses?userId=${encodeURIComponent(userId)}&date=${date}`, {
       method: "DELETE",
     }),
   deleteMealsByDate: (userId: string, date: string) =>
     request<void>(`/api/history/calendar/meals?userId=${encodeURIComponent(userId)}&date=${date}`, {
+      method: "DELETE",
+    }),
+  deleteExpensesByMonth: (userId: string, month: string) =>
+    request<void>(`/api/history/calendar/expenses/month?userId=${encodeURIComponent(userId)}&month=${month}`, {
+      method: "DELETE",
+    }),
+  deleteMealsByMonth: (userId: string, month: string) =>
+    request<void>(`/api/history/calendar/meals/month?userId=${encodeURIComponent(userId)}&month=${month}`, {
       method: "DELETE",
     }),
 };

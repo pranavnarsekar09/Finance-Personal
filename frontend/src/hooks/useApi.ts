@@ -27,6 +27,17 @@ export function useProfile(userId: string = DEFAULT_USER_ID, enabled: boolean = 
   });
 }
 
+export function useStorageUsage(enabled: boolean = true) {
+  return useQuery({
+    queryKey: ["storageUsage"],
+    queryFn: () => api.getStorageUsage(),
+    enabled,
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+}
+
 export function useDashboard(userId: string = DEFAULT_USER_ID, month: string, today?: string, enabled: boolean = true) {
   return useQuery({
     queryKey: ["dashboard", userId, month, today],
@@ -219,6 +230,31 @@ export function useDeleteFoodLog() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string | number) => api.deleteFoodLog(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["foodLogs"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar"] });
+    },
+  });
+}
+
+export function useDeleteExpensesByMonth(userId: string = DEFAULT_USER_ID) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (month: string) => api.deleteExpensesByMonth(userId, month),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar"] });
+      queryClient.invalidateQueries({ queryKey: ["finance"] });
+    },
+  });
+}
+
+export function useDeleteMealsByMonth(userId: string = DEFAULT_USER_ID) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (month: string) => api.deleteMealsByMonth(userId, month),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["foodLogs"] });

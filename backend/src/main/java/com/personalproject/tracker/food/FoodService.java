@@ -134,6 +134,11 @@ public class FoodService {
         foodLogRepository.deleteByUserIdAndDate(requireUserId(userId), date);
     }
 
+    public void deleteMealsByMonth(String userId, String month) {
+        MonthRange range = DateRangeUtils.parseMonth(month);
+        foodLogRepository.deleteByUserIdAndDateGreaterThanEqualAndDateLessThan(requireUserId(userId), range.start(), range.endExclusive());
+    }
+
     public void deleteFoodLog(String id) {
         FoodLog foodLog = foodLogRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Food log not found for id: " + id));

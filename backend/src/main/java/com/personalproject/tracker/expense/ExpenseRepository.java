@@ -16,4 +16,7 @@ public interface ExpenseRepository extends MongoRepository<Expense, String> {
     List<Expense> findByUserIdAndDate(String userId, LocalDate date);
 
     void deleteByUserIdAndDate(String userId, LocalDate date);
+
+    @org.springframework.data.mongodb.repository.Query(value = "{'userId': ?0, 'date': { $gte: ?1, $lt: ?2 }}", delete = true)
+    void deleteByUserIdAndDateGreaterThanEqualAndDateLessThan(String userId, LocalDate startDate, LocalDate endDate);
 }

@@ -119,6 +119,13 @@ public class ExpenseService {
         financeService.refreshFromExpenses(userId);
     }
 
+    public void deleteExpensesByMonth(String userId, String month) {
+        MonthRange range = DateRangeUtils.parseMonth(month);
+        expenseRepository.deleteByUserIdAndDateGreaterThanEqualAndDateLessThan(requireUserId(userId), range.start(), range.endExclusive());
+        insightService.invalidateInsightCache(userId);
+        financeService.refreshFromExpenses(userId);
+    }
+
     public ExpenseResponse addDerivedExpense(
             String userId,
             Double amount,
