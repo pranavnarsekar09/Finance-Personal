@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { Carousel, CarouselApi, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { formatRupees } from "@/lib/utils";
 import type { Expense } from "@/lib/types";
@@ -18,6 +19,7 @@ interface BalanceCardProps {
 }
 
 export function BalanceCard({ total, spent, todaySpent, available, savings, savingsChange, dailyLimit, userName, monthlySavings, latestExpense }: BalanceCardProps) {
+  const navigate = useNavigate();
   const [api, setApi] = useState<CarouselApi>();
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -130,12 +132,15 @@ export function BalanceCard({ total, spent, todaySpent, available, savings, savi
       </Carousel>
 
       <div className="px-2 pt-3">
-        <div className="rounded-[1.35rem] bg-secondary/70 px-4 py-3.5">
+        <div 
+          onClick={() => navigate("/money")}
+          className="rounded-[1.35rem] bg-secondary/70 px-4 py-3.5 cursor-pointer hover:bg-secondary/90 transition active:scale-[0.98]"
+        >
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">Latest Expense</div>
               <div className="mt-1 truncate text-sm font-semibold">
-                {latestExpense?.note?.trim() || latestExpense?.categoryName || "No recent expense"}
+                {latestExpense?.note?.split(" | ")[0] || latestExpense?.categoryName || "No recent expense"}
               </div>
               <div className="mt-1 text-xs text-muted-foreground">
                 {latestExpense?.categoryName || "Your next expense will show here"}
