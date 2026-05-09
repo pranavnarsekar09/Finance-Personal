@@ -77,23 +77,27 @@ public class InsightService {
 
         String headline = "AI Insight";
         String summary = totalSpent > profile.getMonthlyBudget()
-                ? "You have crossed your planned monthly budget. Tightening spend in your highest category could stabilize the month."
-                : "You are tracking within budget so far. Your current pace suggests you can stretch the remaining budget for the rest of the month.";
+                ? "You've exceeded your monthly budget. Try cutting back on non-essentials immediately."
+                : "Your spending is currently within the set budget, but keep an eye on your daily pace.";
 
         String prompt = """
-                Act as a personal finance AI. I am %s, tracking my monthly budget for %s %d.
-                My total monthly budget is %.2f.
-                I have spent %.2f so far this month.
-                My remaining budget is %.2f.
-                My average daily spend so far is %.2f.
-                Based on my current pace, my runway (how many days my remaining budget will last) is %.1f days.
+                Act as a personal finance AI for an Indian user. All currency values are in INR (Indian Rupees).
+                I am %s, tracking my monthly budget for %s %d.
+                My total monthly budget is ₹%.2f.
+                I have spent ₹%.2f so far this month.
+                My remaining monthly budget is ₹%.2f.
+                My actual available balance is ₹%.2f.
+                My average daily spend so far is ₹%.2f.
+                Based on my current pace, my money runway is estimated at %.1f days.
                 My top spending category is "%s".
 
-                Provide a highly concise, 1-2 sentence friendly insight on my financial health this month.
-                Since it might be the start of the month, be encouraging.
+                Provide a highly concise, 1-2 sentence realistic and honest insight on my financial health.
+                CRITICAL: If my available balance or remaining budget is dangerously low (e.g., below ₹500), do NOT be encouraging. Instead, warn me strictly but politely about the financial risk and suggest extreme caution for the rest of the month.
+                If I am doing well, be encouraging but brief.
+                
                 Return ONLY a valid JSON object with EXACTLY two fields:
-                1. "headline": A very short, catchy title (2-4 words maximum, e.g. "Great Pace!", "Watch Out!", "Steady Spending").
-                2. "summary": The 1-2 sentence friendly insight.
+                1. "headline": A very short, catchy title (2-4 words maximum).
+                2. "summary": The 1-2 sentence realistic insight.
                 No markdown, no extra text.
                 """.formatted(
                         profile.getName(), 
@@ -102,6 +106,7 @@ public class InsightService {
                         profile.getMonthlyBudget(), 
                         totalSpent, 
                         remaining, 
+                        profile.getAvailableBalance() != null ? profile.getAvailableBalance() : remaining,
                         avgDailySpend, 
                         runway, 
                         topCategory
