@@ -283,3 +283,25 @@ export function useAnalyzeFood() {
     mutationFn: (payload: { imageUrl?: string; note?: string }) => api.analyzeFood(payload),
   });
 }
+
+export function useMultipleExpenses(userId: string = DEFAULT_USER_ID, months: string[], enabled: boolean = true) {
+  return useQueries({
+    queries: months.map((month) => ({
+      queryKey: ["expenses", userId, month],
+      queryFn: () => api.getExpenses(userId, month),
+      enabled,
+      staleTime: 5 * 60 * 1000,
+    })),
+  });
+}
+
+export function useMultipleFoodLogs(userId: string = DEFAULT_USER_ID, months: string[], enabled: boolean = true) {
+  return useQueries({
+    queries: months.map((month) => ({
+      queryKey: ["foodLogs", userId, month],
+      queryFn: () => api.getFoodLogs(userId, month),
+      enabled,
+      staleTime: 5 * 60 * 1000,
+    })),
+  });
+}

@@ -2,9 +2,10 @@ import { Flame } from "lucide-react";
 
 interface StreakCardProps {
   streak: number;
+  isTodayActive?: boolean;
 }
 
-export function StreakCard({ streak }: StreakCardProps) {
+export function StreakCard({ streak, isTodayActive = false }: StreakCardProps) {
   const today = new Date();
   const currentDayIndex = (today.getDay() + 6) % 7; // 0=M, 1=T, ..., 5=S, 6=S
 
@@ -19,8 +20,11 @@ export function StreakCard({ streak }: StreakCardProps) {
       </div>
       <div className="flex gap-1.5">
         {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => {
-          // A day is "active" if it's today or within the streak count leading up to today
-          const isActive = i <= currentDayIndex && i > currentDayIndex - streak;
+          // A day is "active" if it's within the streak count leading up to the last active day
+          const isActive = isTodayActive 
+            ? (i <= currentDayIndex && i > currentDayIndex - streak)
+            : (i < currentDayIndex && i >= currentDayIndex - streak);
+          
           return (
             <div 
               key={i} 

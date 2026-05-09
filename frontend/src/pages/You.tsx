@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Check, Plus, Sun, Moon, AlertCircle, Edit2, Trash2, Download, FileText, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
-import { useGoals, useProfile, useSaveProfile, useSaveCategories, useExpenses, useFoodLogs, useFinance, useDashboard, useStorageUsage } from "@/hooks/useApi";
+import { useGoals, useProfile, useSaveProfile, useSaveCategories, useMultipleExpenses, useMultipleFoodLogs, useFinance, useDashboard, useStorageUsage } from "@/hooks/useApi";
 import { formatRupees } from "@/lib/utils";
 import type { Goal, UserCategory } from "@/lib/types";
 import { format, subMonths } from "date-fns";
@@ -29,8 +29,8 @@ export default function You() {
   const currentMonth = format(new Date(), "yyyy-MM");
   const monthsToFetch = Array.from({ length: 12 }, (_, i) => format(subMonths(new Date(), 11 - i), "yyyy-MM"));
   
-  const expensesQueries = monthsToFetch.map(month => useExpenses(profile?.userId || "", month));
-  const foodLogsQueries = monthsToFetch.map(month => useFoodLogs(profile?.userId || "", month));
+  const expensesQueries = useMultipleExpenses(profile?.userId || "", monthsToFetch, !!profile);
+  const foodLogsQueries = useMultipleFoodLogs(profile?.userId || "", monthsToFetch, !!profile);
   
   const { data: finance } = useFinance(profile?.userId || "");
   const { data: dashboard } = useDashboard(profile?.userId || "", currentMonth);

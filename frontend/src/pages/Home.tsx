@@ -399,7 +399,10 @@ function OverviewTab({
       />
       <InsightCard />
       <div className="grid grid-cols-2 gap-3">
-        <StreakCard streak={dashboard?.streak || 0} />
+        <StreakCard 
+          streak={dashboard?.streak || 0} 
+          isTodayActive={(dashboard?.spentToday || 0) > 0 || (dashboard?.caloriesToday || 0) > 0} 
+        />
         <CalorieBar eaten={dashboard?.caloriesToday || 0} goal={dashboard?.calorieGoal || 2000} />
       </div>
       <JarsRow />
