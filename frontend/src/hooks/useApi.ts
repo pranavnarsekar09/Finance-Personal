@@ -131,6 +131,7 @@ export function useAddExpense() {
   return useMutation({
     mutationFn: (payload: CreateExpenseRequest) => api.addExpense(payload),
     onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["profile"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["dashboard"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["expenses"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["calendar"], exact: false });
@@ -144,9 +145,12 @@ export function useSaveFoodLog() {
   return useMutation({
     mutationFn: (payload: CreateFoodLogRequest) => api.saveFoodLog(payload),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
       queryClient.invalidateQueries({ queryKey: ["foodLogs"] });
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
+      queryClient.invalidateQueries({ queryKey: ["finance"] });
     },
   });
 }

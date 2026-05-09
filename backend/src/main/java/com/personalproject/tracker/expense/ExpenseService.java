@@ -49,6 +49,15 @@ public class ExpenseService {
         expense.setCreatedAt(Instant.now());
 
         ExpenseResponse response = toResponse(expenseRepository.save(expense));
+        
+        // Update profile balance
+        UserProfile profile = profileRepository.findByUserId(request.userId()).orElse(null);
+        if (profile != null) {
+            double currentBalance = profile.getAvailableBalance() != null ? profile.getAvailableBalance() : 0.0;
+            profile.setAvailableBalance(currentBalance - request.amount());
+            profileRepository.save(profile);
+        }
+
         insightService.invalidateInsightCache(request.userId());
         financeService.refreshFromExpenses(request.userId());
         return response;
@@ -59,10 +68,20 @@ public class ExpenseService {
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense not found for id: " + id));
         String previousUserId = expense.getUserId();
+        double oldAmount = expense.getAmount();
 
         applyExpenseRequest(expense, request);
 
         ExpenseResponse response = toResponse(expenseRepository.save(expense));
+
+        // Update profile balance (refund old, deduct new)
+        UserProfile profile = profileRepository.findByUserId(request.userId()).orElse(null);
+        if (profile != null) {
+            double currentBalance = profile.getAvailableBalance() != null ? profile.getAvailableBalance() : 0.0;
+            profile.setAvailableBalance(currentBalance + oldAmount - request.amount());
+            profileRepository.save(profile);
+        }
+
         insightService.invalidateInsightCache(request.userId());
         financeService.refreshFromExpenses(request.userId());
         if (!previousUserId.equals(request.userId())) {
@@ -109,19 +128,50 @@ public class ExpenseService {
         });
         
         expenseRepository.delete(expense);
+
+        // Update profile balance (refund)
+        UserProfile profile = profileRepository.findByUserId(expense.getUserId()).orElse(null);
+        if (profile != null) {
+            double currentBalance = profile.getAvailableBalance() != null ? profile.getAvailableBalance() : 0.0;
+            profile.setAvailableBalance(currentBalance + expense.getAmount());
+            profileRepository.save(profile);
+        }
+
         insightService.invalidateInsightCache(expense.getUserId());
         financeService.refreshFromExpenses(expense.getUserId());
     }
 
     public void deleteExpensesByDate(String userId, LocalDate date) {
+        List<Expense> expenses = expenseRepository.findByUserIdAndDate(requireUserId(userId), date);
+        double totalToRefund = expenses.stream().mapToDouble(Expense::getAmount).sum();
+        
         expenseRepository.deleteByUserIdAndDate(requireUserId(userId), date);
+
+        UserProfile profile = profileRepository.findByUserId(userId).orElse(null);
+        if (profile != null && totalToRefund > 0) {
+            double currentBalance = profile.getAvailableBalance() != null ? profile.getAvailableBalance() : 0.0;
+            profile.setAvailableBalance(currentBalance + totalToRefund);
+            profileRepository.save(profile);
+        }
+
         insightService.invalidateInsightCache(userId);
         financeService.refreshFromExpenses(userId);
     }
 
     public void deleteExpensesByMonth(String userId, String month) {
         MonthRange range = DateRangeUtils.parseMonth(month);
+        List<Expense> expenses = expenseRepository.findByUserIdAndDateGreaterThanEqualAndDateLessThan(requireUserId(userId), range.start(), range.endExclusive());
+        double totalToRefund = expenses.stream().mapToDouble(Expense::getAmount).sum();
+
         expenseRepository.deleteByUserIdAndDateGreaterThanEqualAndDateLessThan(requireUserId(userId), range.start(), range.endExclusive());
+
+        UserProfile profile = profileRepository.findByUserId(userId).orElse(null);
+        if (profile != null && totalToRefund > 0) {
+            double currentBalance = profile.getAvailableBalance() != null ? profile.getAvailableBalance() : 0.0;
+            profile.setAvailableBalance(currentBalance + totalToRefund);
+            profileRepository.save(profile);
+        }
+
         insightService.invalidateInsightCache(userId);
         financeService.refreshFromExpenses(userId);
     }

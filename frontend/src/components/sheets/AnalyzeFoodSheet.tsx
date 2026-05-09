@@ -14,6 +14,7 @@ export function AnalyzeFoodSheet({ open, onClose }: { open: boolean; onClose: ()
 
   const [image, setImage] = useState<string | null>(null);
   const [foodName, setFoodName] = useState("");
+  const [personalizedMsg, setPersonalizedMsg] = useState("");
   const [cost, setCost] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
@@ -36,7 +37,7 @@ export function AnalyzeFoodSheet({ open, onClose }: { open: boolean; onClose: ()
     try {
       const result = await analyzeFood.mutateAsync({
         imageUrl: image, // This is base64
-        note: foodName || "Analyze this food",
+        note: personalizedMsg || foodName || "Analyze this food",
       });
       setAnalysisResult(result);
       if (result.foodName && !foodName) setFoodName(result.foodName);
@@ -63,20 +64,23 @@ export function AnalyzeFoodSheet({ open, onClose }: { open: boolean; onClose: ()
         fat: analysisResult.fat,
         date: format(new Date(), "yyyy-MM-dd"),
         estimatedCost: costVal,
+        expenseCategoryName: costVal > 0 ? "Dining" : undefined,
         imageUrl: image || "",
+        note: personalizedMsg || undefined
       });
 
-      toast.success("AI Meal Logged successfully!");
+      toast.success(costVal > 0 ? "AI Meal logged & added to expenses" : "AI Meal Logged successfully!");
       reset();
       onClose();
     } catch (error: any) {
-      toast.error("Failed to save meal log.");
+      toast.error(error.message || "Failed to save meal log.");
     }
   };
 
   const reset = () => {
     setImage(null);
     setFoodName("");
+    setPersonalizedMsg("");
     setCost("");
     setAnalysisResult(null);
     setIsAnalyzing(false);
@@ -112,6 +116,16 @@ export function AnalyzeFoodSheet({ open, onClose }: { open: boolean; onClose: ()
               value={foodName} 
               onChange={(e) => setFoodName(e.target.value)} 
               placeholder="e.g. Avocado Toast" 
+              className="rounded-2xl h-12 mt-1"
+            />
+          </div>
+
+          <div>
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground">Context for AI (e.g. 200g, extra spice)</Label>
+            <Input 
+              value={personalizedMsg} 
+              onChange={(e) => setPersonalizedMsg(e.target.value)} 
+              placeholder="e.g. Total weight 200g, used olive oil" 
               className="rounded-2xl h-12 mt-1"
             />
           </div>

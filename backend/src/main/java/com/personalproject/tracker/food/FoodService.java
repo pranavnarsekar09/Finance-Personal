@@ -81,7 +81,7 @@ public class FoodService {
                     linkedCategory,
                     PaymentMethod.UPI,
                     request.date(),
-                    "Auto-added from meal log: " + request.foodName(),
+                    request.foodName() + " | Auto-added from meal log",
                     false
             ));
         } else if (!StringUtils.hasText(log.getLinkedExpenseId()) && StringUtils.hasText(linkedCategory)) {
@@ -91,7 +91,7 @@ public class FoodService {
                     linkedCategory,
                     PaymentMethod.UPI,
                     request.date(),
-                    "Auto-added from meal log: " + request.foodName()
+                    request.foodName() + " | Auto-added from meal log"
             );
             log.setLinkedExpenseId(createdExpense.id());
         }
@@ -162,18 +162,23 @@ public class FoodService {
             return Optional.empty();
         }
 
+        // 1. Try exact match if explicit name provided
         if (StringUtils.hasText(explicitCategoryName)) {
-            return profile.getCategories().stream()
+            Optional<String> exactMatch = profile.getCategories().stream()
                     .map(category -> category.name().trim())
                     .filter(name -> name.equalsIgnoreCase(explicitCategoryName.trim()))
                     .findFirst();
+            if (exactMatch.isPresent()) {
+                return exactMatch;
+            }
         }
 
+        // 2. Fallback to fuzzy matching for food-related categories
         return profile.getCategories().stream()
                 .map(category -> category.name().trim())
                 .filter(name -> {
                     String normalized = name.toLowerCase(Locale.ROOT);
-                    return normalized.contains("food") || normalized.contains("meal") || normalized.contains("grocery");
+                    return normalized.contains("food") || normalized.contains("meal") || normalized.contains("dining") || normalized.contains("grocery");
                 })
                 .findFirst();
     }

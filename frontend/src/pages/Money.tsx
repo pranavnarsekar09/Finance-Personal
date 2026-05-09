@@ -192,10 +192,16 @@ function ExpenseItem({ t }: { t: Expense }) {
     <div className="group flex items-center gap-3 p-4 hover:bg-secondary/30 transition">
       <div className="h-11 w-11 rounded-full bg-secondary flex items-center justify-center text-lg">💰</div>
       <div className="flex-1 min-w-0">
-        <div className="font-medium truncate">{t.note || t.categoryName}</div>
-        <div className="text-xs text-muted-foreground flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded-full bg-secondary">{t.categoryName}</span>
-          {t.paymentMethod}
+        <div className="font-medium truncate">{t.note?.split(" | ")[0] || t.categoryName}</div>
+        <div className="text-[10px] text-muted-foreground flex items-center gap-2">
+          {t.note?.includes(" | ") ? (
+            <span>{t.note.split(" | ")[1]}</span>
+          ) : (
+            <>
+              <span className="px-2 py-0.5 rounded-full bg-secondary">{t.categoryName}</span>
+              {t.paymentMethod}
+            </>
+          )}
         </div>
       </div>
       <div className="text-right flex items-center gap-4">
@@ -323,11 +329,17 @@ function CalendarGrid({ monthStr, currentMonth }: { monthStr: string; currentMon
                     <Icon className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-sm truncate">{e.note || e.categoryName}</div>
-                    <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
-                      <span className="font-medium">{e.categoryName}</span>
-                      <span className="opacity-40">•</span>
-                      <span>{e.paymentMethod}</span>
+                    <div className="font-bold text-sm truncate">{e.note?.split(" | ")[0]}</div>
+                    <div className="text-[10px] text-muted-foreground flex flex-col mt-0.5">
+                      {e.note?.includes(" | ") ? (
+                         <span className="truncate">{e.note.split(" | ")[1]}</span>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium">{e.categoryName}</span>
+                          <span className="opacity-40">•</span>
+                          <span>{e.paymentMethod}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="text-right flex items-center gap-3">
