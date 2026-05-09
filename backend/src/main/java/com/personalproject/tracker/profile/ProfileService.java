@@ -43,6 +43,7 @@ public class ProfileService {
         profile.setEmail(request.email().trim().toLowerCase(Locale.ROOT));
         profile.setMonthlyBudget(request.monthlyBudget());
         profile.setCalorieGoal(request.calorieGoal());
+        profile.setAvailableBalance(request.availableBalance());
 
         if (request.categories() != null) {
             profile.setCategories(new ArrayList<>(request.categories()));
@@ -114,6 +115,7 @@ public class ProfileService {
                 profile.getEmail(),
                 profile.getMonthlyBudget(),
                 profile.getCalorieGoal(),
+                profile.getAvailableBalance(),
                 categories,
                 profile.getCreatedAt(),
                 isOnboardingComplete(profile)

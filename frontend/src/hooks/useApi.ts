@@ -7,8 +7,9 @@ import type {
   CreateFoodLogRequest,
   FinanceSettingsRequest,
   ProfileUpsertRequest,
-  UpdateDailyFinanceRequest,
   UpdateCategoriesRequest,
+  UpdateDailyFinanceRequest,
+  UpdateGoalRequest,
 } from "@/lib/types";
 import { format, subMonths } from "date-fns";
 
@@ -48,10 +49,10 @@ export function useDashboard(userId: string = DEFAULT_USER_ID, month: string, to
   });
 }
 
-export function useFinance(userId: string = DEFAULT_USER_ID, enabled: boolean = true) {
+export function useFinance(userId: string = DEFAULT_USER_ID, today?: string, enabled: boolean = true) {
   return useQuery({
-    queryKey: ["finance", userId],
-    queryFn: () => api.getFinance(userId),
+    queryKey: ["finance", userId, today],
+    queryFn: () => api.getFinance(userId, today),
     enabled,
     staleTime: 1 * 60 * 1000,
     ...CRITICAL_QUERY_OPTIONS,
@@ -187,6 +188,17 @@ export function useAddGoal() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateGoalRequest) => api.addGoal(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["goals"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
+export function useUpdateGoal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateGoalRequest }) => api.updateGoal(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["goals"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });

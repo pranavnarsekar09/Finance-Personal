@@ -20,6 +20,7 @@ public record ProfileUpsertRequest(
         @NotNull(message = "Calorie goal is required")
         @DecimalMin(value = "0.0", inclusive = false, message = "Calorie goal must be greater than 0")
         Double calorieGoal,
+        Double availableBalance,
         @Valid
         List<UserCategory> categories
 ) {

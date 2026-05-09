@@ -35,10 +35,10 @@ public class FinanceService {
         this.expenseRepository = expenseRepository;
     }
 
-    public FinanceResponse getFinance(String userId) {
+    public FinanceResponse getFinance(String userId, LocalDate today) {
         String normalizedUserId = requireUserId(userId);
         UserFinance finance = getOrCreateFinance(normalizedUserId);
-        return refreshFromExpenses(finance, LocalDate.now());
+        return refreshFromExpenses(finance, today);
     }
 
     public FinanceResponse upsertFinance(String userId, FinanceSettingsRequest request) {
@@ -72,7 +72,8 @@ public class FinanceService {
                 roundMoney(defaultIfNull(finance.getDailyLimit(), DEFAULT_DAILY_LIMIT)),
                 roundMoney(defaultIfNull(finance.getBuffer(), defaultIfNull(finance.getStartingBuffer(), 0.0))),
                 roundMoney(defaultIfNull(finance.getSavings(), defaultIfNull(finance.getStartingSavings(), 0.0))),
-                normalizedUserId
+                normalizedUserId,
+                effectiveDate.isBefore(LocalDate.now())
         );
 
         financeDailyRecordRepository.findByUserIdAndDate(normalizedUserId, effectiveDate)
@@ -126,7 +127,7 @@ public class FinanceService {
 
         for (LocalDate cursor = startDate; !cursor.isAfter(today); cursor = cursor.plusDays(1)) {
             double spentAmount = roundMoney(spentByDate.getOrDefault(cursor, 0.0));
-            DailyComputationResult result = applyDailyRules(cursor, spentAmount, dailyLimit, currentBuffer, currentSavings, finance.getUserId());
+            DailyComputationResult result = applyDailyRules(cursor, spentAmount, dailyLimit, currentBuffer, currentSavings, finance.getUserId(), cursor.isBefore(today));
             rebuiltRecords.add(result.record());
             currentBuffer = result.record().getBufferAfter();
             currentSavings = result.record().getSavingsAfter();
@@ -171,7 +172,8 @@ public class FinanceService {
             double dailyLimit,
             double currentBuffer,
             double currentSavings,
-            String userId
+            String userId,
+            boolean applyGains
     ) {
         FinanceDailyRecord record = new FinanceDailyRecord();
         record.setUserId(userId);
@@ -180,10 +182,11 @@ public class FinanceService {
         record.setDailyLimit(roundMoney(dailyLimit));
 
         if (spentAmount <= dailyLimit) {
-            // Step 4a: Split unused money equally between buffer and savings.
+            // Unused money: only commit gains to reserves if the day is finalized (past).
+            // This prevents the buffer from "shrinking" as you spend within your limit today.
             double leftover = roundMoney(dailyLimit - spentAmount);
-            double bufferGain = roundMoney(leftover / 2.0);
-            double savingsGain = roundMoney(leftover - bufferGain);
+            double bufferGain = applyGains ? roundMoney(leftover / 2.0) : 0.0;
+            double savingsGain = applyGains ? roundMoney(leftover - bufferGain) : 0.0;
 
             record.setLeftoverAmount(leftover);
             record.setExtraAmount(0.0);
@@ -195,7 +198,7 @@ public class FinanceService {
             return new DailyComputationResult(record, roundMoney(leftover));
         }
 
-        // Step 4b: Spend above the limit drains buffer first, then savings.
+        // Overspending drains reserves immediately.
         double extra = roundMoney(spentAmount - dailyLimit);
         double bufferUsed = Math.min(currentBuffer, extra);
         double remainingAfterBuffer = roundMoney(extra - bufferUsed);

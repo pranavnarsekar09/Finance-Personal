@@ -1,11 +1,14 @@
 package com.personalproject.tracker.goal;
 
 import com.personalproject.tracker.goal.dto.CreateGoalRequest;
+import com.personalproject.tracker.goal.dto.UpdateGoalRequest;
 import com.personalproject.tracker.goal.dto.GoalResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -24,6 +27,11 @@ public class GoalController {
     @PostMapping
     public GoalResponse createGoal(@Valid @RequestBody CreateGoalRequest request) {
         return goalService.createGoal(request);
+    }
+
+    @PutMapping("/{id}")
+    public GoalResponse updateGoal(@PathVariable String id, @Valid @RequestBody UpdateGoalRequest request) {
+        return goalService.updateGoal(id, request);
     }
 
     @GetMapping

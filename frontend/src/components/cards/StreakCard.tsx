@@ -5,6 +5,9 @@ interface StreakCardProps {
 }
 
 export function StreakCard({ streak }: StreakCardProps) {
+  const today = new Date();
+  const currentDayIndex = (today.getDay() + 6) % 7; // 0=M, 1=T, ..., 5=S, 6=S
+
   return (
     <div className="bg-card rounded-[1.75rem] shadow-soft p-5">
       <div className="flex items-center justify-between mb-3">
@@ -15,11 +18,20 @@ export function StreakCard({ streak }: StreakCardProps) {
         <span className="font-display text-2xl font-bold">{streak}d</span>
       </div>
       <div className="flex gap-1.5">
-        {[...Array(7)].map((_, i) => (
-          <div key={i} className={`flex-1 h-9 rounded-full flex items-center justify-center text-[10px] font-bold ${i < streak % 7 ? "bg-mint text-primary" : "bg-secondary text-muted-foreground"}`}>
-            {['M', 'T', 'W', 'T', 'F', 'S', 'S'][i]}
-          </div>
-        ))}
+        {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => {
+          // A day is "active" if it's today or within the streak count leading up to today
+          const isActive = i <= currentDayIndex && i > currentDayIndex - streak;
+          return (
+            <div 
+              key={i} 
+              className={`flex-1 h-9 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                isActive ? "bg-mint text-primary shadow-sm" : "bg-secondary text-muted-foreground"
+              }`}
+            >
+              {day}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

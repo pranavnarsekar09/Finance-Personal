@@ -103,7 +103,8 @@ export default function Health() {
       return {
         dateStr,
         dayKcal,
-        mealsCount: logs.length
+        mealsCount: logs.length,
+        mealNames: logs.map(l => l.foodName?.trim() || "Food").join(", ")
       };
     });
 
@@ -212,7 +213,7 @@ export default function Health() {
                 <div key={m.id} className="bg-card rounded-2xl shadow-soft p-4 border border-white/50">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <div className="font-semibold">{m.foodName}</div>
+                      <div className="font-semibold">{m.foodName?.trim() || "Food"}</div>
                       <div className="text-xs text-muted-foreground">{typeof m.date === 'string' ? format(parseISO(m.date), "MMM d") : "?"}</div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -302,9 +303,9 @@ export default function Health() {
                       <UtensilsCrossed className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold">{format(dateObj, "EEEE, MMM d")}</div>
+                      <div className="font-bold truncate">{day.mealNames}</div>
                       <div className="text-xs text-muted-foreground mt-0.5">
-                        {day.dayKcal.toLocaleString()} kcal • {day.mealsCount} meals logged
+                        {format(dateObj, "EEEE, MMM d")} • {day.dayKcal.toLocaleString()} kcal
                       </div>
                     </div>
                     <div className="flex gap-1 pr-2">

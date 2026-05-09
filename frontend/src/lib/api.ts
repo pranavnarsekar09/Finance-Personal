@@ -18,6 +18,7 @@ import type {
   ProfileUpsertRequest,
   UpdateCategoriesRequest,
   UpdateDailyFinanceRequest,
+  UpdateGoalRequest,
 } from "./types";
 
 type RequestOptions = RequestInit & {
@@ -73,8 +74,8 @@ export const api = {
     }),
   getDashboard: (userId: string, month: string, today?: string) =>
     request<DashboardSummary>(`/api/dashboard/summary?userId=${encodeURIComponent(userId)}&month=${month}${today ? `&today=${today}` : ""}`),
-  getFinance: (userId: string) =>
-    request<Finance>(`/api/finance?userId=${encodeURIComponent(userId)}`),
+  getFinance: (userId: string, today?: string) =>
+    request<Finance>(`/api/finance?userId=${encodeURIComponent(userId)}${today ? `&today=${today}` : ""}`),
   saveFinance: (userId: string, payload: FinanceSettingsRequest) =>
     request<Finance>(`/api/finance?userId=${encodeURIComponent(userId)}`, {
       method: "PUT",
@@ -116,6 +117,11 @@ export const api = {
   addGoal: (payload: { userId: string; type: GoalType; targetAmount: number; currentAmount: number; deadline: string }) =>
     request<Goal>("/api/goals", {
       method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  updateGoal: (id: string, payload: UpdateGoalRequest) =>
+    request<Goal>(`/api/goals/${id}`, {
+      method: "PUT",
       body: JSON.stringify(payload),
     }),
   getInsight: (userId: string) => request<Insight>(`/api/ai/insight?userId=${encodeURIComponent(userId)}`),

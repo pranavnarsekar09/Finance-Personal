@@ -23,6 +23,8 @@ public class UserProfile {
     private Double monthlyBudget;
 
     private Double calorieGoal;
+    
+    private Double availableBalance;
 
     private List<UserCategory> categories = new ArrayList<>();
 
@@ -74,6 +76,14 @@ public class UserProfile {
 
     public void setCalorieGoal(Double calorieGoal) {
         this.calorieGoal = calorieGoal;
+    }
+
+    public Double getAvailableBalance() {
+        return availableBalance;
+    }
+
+    public void setAvailableBalance(Double availableBalance) {
+        this.availableBalance = availableBalance;
     }
 
     public List<UserCategory> getCategories() {

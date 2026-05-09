@@ -1,6 +1,7 @@
 package com.personalproject.tracker.goal;
 
 import com.personalproject.tracker.goal.dto.CreateGoalRequest;
+import com.personalproject.tracker.goal.dto.UpdateGoalRequest;
 import com.personalproject.tracker.goal.dto.GoalResponse;
 import java.time.Instant;
 import java.util.List;
@@ -24,6 +25,18 @@ public class GoalService {
         goal.setCurrentAmount(request.currentAmount());
         goal.setDeadline(request.deadline());
         goal.setCreatedAt(Instant.now());
+        return toResponse(goalRepository.save(goal));
+    }
+
+    public GoalResponse updateGoal(String id, UpdateGoalRequest request) {
+        Goal goal = goalRepository.findById(id)
+                .orElseThrow(() -> new com.personalproject.tracker.common.ResourceNotFoundException("Goal not found"));
+        
+        if (request.type() != null) goal.setType(request.type());
+        if (request.targetAmount() != null) goal.setTargetAmount(request.targetAmount());
+        if (request.currentAmount() != null) goal.setCurrentAmount(request.currentAmount());
+        if (request.deadline() != null) goal.setDeadline(request.deadline());
+        
         return toResponse(goalRepository.save(goal));
     }
 

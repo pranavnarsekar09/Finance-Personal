@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { AlertCircle, PiggyBank, RefreshCw, Target, Wallet } from "lucide-react";
-import { useAddGoal, useDashboard, useExpenseTrend, useFinance, useGoals, useProfile, useSaveFinance, useSaveProfile } from "@/hooks/useApi";
+import { useAddGoal, useDashboard, useExpenseTrend, useFinance, useGoals, useProfile, useSaveFinance, useSaveProfile, useUpdateGoal } from "@/hooks/useApi";
 import { useSwipeNative } from "@/hooks/useSwipe";
 import { useHaptic } from "@/hooks/useHaptic";
 import { BalanceCard } from "@/components/cards/BalanceCard";
@@ -36,7 +36,7 @@ export default function Home() {
 
   const profileQuery = useProfile();
   const dashboardQuery = useDashboard(undefined, month, today);
-  const financeQuery = useFinance(undefined, tab !== "budget");
+  const financeQuery = useFinance(undefined, today, tab === "spending" || tab === "overview");
   const goalsQuery = useGoals(undefined, tab === "budget");
   const expenseTrend = useExpenseTrend(undefined, tab === "budget");
 
@@ -129,12 +129,14 @@ export default function Home() {
               trendExpenses={expenseTrend.data.flatMap((entry) => entry.expenses)}
               trendLoading={expenseTrend.isLoading}
               trendError={expenseTrend.isError ? "Spending trend is taking too long to load." : null}
+              totalSpent={dashboard?.totalSpent || 0}
             />
           ) : (
             <SpendingTab
               finance={finance || dashboard?.spending || null}
               financeLoading={financeQuery.isLoading}
               financeError={financeQuery.error instanceof Error ? financeQuery.error.message : null}
+              monthlySavings={dashboard?.monthlySavings || 0}
             />
           )}
         </motion.div>
@@ -147,10 +149,12 @@ function SpendingTab({
   finance,
   financeLoading,
   financeError,
+  monthlySavings,
 }: {
   finance: any;
   financeLoading: boolean;
   financeError: string | null;
+  monthlySavings: number;
 }) {
   const saveFinance = useSaveFinance();
   const [dailyLimitInput, setDailyLimitInput] = useState(finance?.dailyLimit?.toString() || "100");
@@ -207,14 +211,14 @@ function SpendingTab({
       {financeError ? <QueryErrorCard title="Spending data unavailable" message={financeError} /> : null}
       {financeLoading && !finance ? <QueryLoadingCard label="Waking your spending data..." /> : null}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-card rounded-[1.75rem] shadow-soft p-5">
           <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground mb-3">
             <Wallet className="h-4 w-4 text-primary" />
             Daily Limit
           </div>
-          <div className="font-display text-3xl font-bold">{formatRupees(finance?.dailyLimit || 0)}</div>
-          <p className="text-sm text-muted-foreground mt-2">Spent today: {formatRupees(finance?.todaySpent || 0)}</p>
+          <div className="font-display text-2xl font-bold">{formatRupees(finance?.dailyLimit || 0)}</div>
+          <p className="text-xs text-muted-foreground mt-2">Spent today: {formatRupees(finance?.todaySpent || 0)}</p>
         </div>
 
         <div className="bg-card rounded-[1.75rem] shadow-soft p-5">
@@ -222,8 +226,8 @@ function SpendingTab({
             <Wallet className="h-4 w-4 text-primary" />
             Buffer
           </div>
-          <div className="font-display text-3xl font-bold">{formatRupees(finance?.buffer || 0)}</div>
-          <p className="text-sm text-muted-foreground mt-2">Used first whenever you go above the limit.</p>
+          <div className="font-display text-2xl font-bold">{formatRupees(finance?.buffer || 0)}</div>
+          <p className="text-xs text-muted-foreground mt-2">Drains before savings.</p>
         </div>
 
         <div className="bg-card rounded-[1.75rem] shadow-soft p-5">
@@ -231,10 +235,17 @@ function SpendingTab({
             <PiggyBank className="h-4 w-4 text-primary" />
             Savings
           </div>
-          <div className="font-display text-3xl font-bold">{formatRupees(finance?.savings || 0)}</div>
-          <p className="text-sm text-muted-foreground mt-2">
-            {todayDifference >= 0 ? `${formatRupees(todayDifference)} available to split today.` : `${formatRupees(Math.abs(todayDifference))} pulled from reserves today.`}
-          </p>
+          <div className="font-display text-2xl font-bold">{formatRupees(finance?.savings || 0)}</div>
+          <p className="text-xs text-muted-foreground mt-2">Cumulative reserves.</p>
+        </div>
+
+        <div className="bg-card rounded-[1.75rem] shadow-soft p-5">
+          <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground mb-3">
+            <PiggyBank className="h-4 w-4 text-primary" />
+            Month Save
+          </div>
+          <div className="font-display text-2xl font-bold">{formatRupees(monthlySavings)}</div>
+          <p className="text-xs text-muted-foreground mt-2">Saved this month.</p>
         </div>
       </div>
 
@@ -383,6 +394,7 @@ function OverviewTab({
         savingsChange={finance?.todayDifference || 0}
         dailyLimit={finance?.dailyLimit || 0}
         userName={profileName}
+        monthlySavings={dashboard?.monthlySavings || 0}
         latestExpense={dashboard?.recentTransactions?.[0] || null}
       />
       <InsightCard />
@@ -414,6 +426,7 @@ function BudgetTab({
   trendExpenses,
   trendLoading,
   trendError,
+  totalSpent,
 }: {
   profile: any;
   profileLoading: boolean;
@@ -424,20 +437,43 @@ function BudgetTab({
   trendExpenses: any[];
   trendLoading: boolean;
   trendError: string | null;
+  totalSpent: number;
 }) {
   const saveProfile = useSaveProfile();
   const addGoal = useAddGoal();
+  const updateGoal = useUpdateGoal();
+  const { medium } = useHaptic();
   const [budgetInput, setBudgetInput] = useState(profile?.monthlyBudget?.toString() || "");
   const [calorieInput, setCalorieInput] = useState(profile?.calorieGoal?.toString() || "");
+  const [balanceInput, setBalanceInput] = useState("");
   const [goalType, setGoalType] = useState<GoalType>("SAVINGS");
   const [goalTarget, setGoalTarget] = useState("");
   const [goalCurrent, setGoalCurrent] = useState("0");
   const [goalDeadline, setGoalDeadline] = useState(format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), "yyyy-MM-dd"));
+  const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
 
   useEffect(() => {
     setBudgetInput(profile?.monthlyBudget?.toString() || "");
     setCalorieInput(profile?.calorieGoal?.toString() || "");
-  }, [profile?.monthlyBudget, profile?.calorieGoal]);
+    const initialBalance = (profile?.monthlyBudget || 0) - totalSpent;
+    setBalanceInput(initialBalance.toString());
+  }, [profile?.monthlyBudget, profile?.calorieGoal, totalSpent]);
+
+  const handleBudgetInputChange = (val: string) => {
+    setBudgetInput(val);
+    const num = Number(val);
+    if (!isNaN(num)) {
+      setBalanceInput((num - totalSpent).toString());
+    }
+  };
+
+  const handleBalanceInputChange = (val: string) => {
+    setBalanceInput(val);
+    const num = Number(val);
+    if (!isNaN(num)) {
+      setBudgetInput((num + totalSpent).toString());
+    }
+  };
 
   const handleBudgetSave = async () => {
     if (!profile) {
@@ -458,6 +494,7 @@ function BudgetTab({
       email: profile.email,
       monthlyBudget,
       calorieGoal,
+      availableBalance: Number(balanceInput),
       categories: profile.categories || [],
     };
 
@@ -483,23 +520,46 @@ function BudgetTab({
       return;
     }
 
-    const payload: CreateGoalRequest = {
-      userId: profile?.userId || "demo-user",
-      type: goalType,
-      targetAmount,
-      currentAmount: currentAmount >= 0 ? currentAmount : 0,
-      deadline: goalDeadline,
-    };
-
     try {
-      await addGoal.mutateAsync(payload);
+      if (editingGoalId) {
+        await updateGoal.mutateAsync({
+          id: editingGoalId,
+          payload: {
+            type: goalType,
+            targetAmount,
+            currentAmount: currentAmount >= 0 ? currentAmount : 0,
+            deadline: goalDeadline,
+          },
+        });
+        toast.success("Goal updated.");
+      } else {
+        const payload: CreateGoalRequest = {
+          userId: profile?.userId || "demo-user",
+          type: goalType,
+          targetAmount,
+          currentAmount: currentAmount >= 0 ? currentAmount : 0,
+          deadline: goalDeadline,
+        };
+        await addGoal.mutateAsync(payload);
+        toast.success("Goal added.");
+      }
+      
       setGoalTarget("");
       setGoalCurrent("0");
       setGoalDeadline(format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), "yyyy-MM-dd"));
-      toast.success("Goal added.");
+      setEditingGoalId(null);
     } catch (error: any) {
-      toast.error(error.message || "Failed to add goal.");
+      toast.error(error.message || "Failed to process goal.");
     }
+  };
+
+  const startEditingGoal = (goal: any) => {
+    setEditingGoalId(goal.id);
+    setGoalType(goal.type);
+    setGoalTarget(goal.targetAmount.toString());
+    setGoalCurrent(goal.currentAmount.toString());
+    setGoalDeadline(format(new Date(goal.deadline), "yyyy-MM-dd"));
+    medium();
   };
 
   return (
@@ -520,15 +580,25 @@ function BudgetTab({
       <SpendingTrendChart expenses={trendExpenses} isLoading={trendLoading} />
 
       <div className="bg-card rounded-[1.75rem] shadow-soft p-5 space-y-5">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Monthly Budget</div>
             <Input
               type="number"
               min="1"
               value={budgetInput}
-              onChange={(e) => setBudgetInput(e.target.value)}
+              onChange={(e) => handleBudgetInputChange(e.target.value)}
               placeholder="Enter monthly budget"
+              className="rounded-2xl h-12"
+            />
+          </div>
+          <div>
+            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Available Balance</div>
+            <Input
+              type="number"
+              value={balanceInput}
+              onChange={(e) => handleBalanceInputChange(e.target.value)}
+              placeholder="Enter available balance"
               className="rounded-2xl h-12"
             />
           </div>
@@ -608,25 +678,32 @@ function BudgetTab({
 
         <button
           onClick={handleAddGoal}
-          disabled={addGoal.isPending}
+          disabled={addGoal.isPending || updateGoal.isPending}
           className="w-full rounded-full bg-secondary py-3.5 font-medium disabled:opacity-50"
         >
-          {addGoal.isPending ? "Adding Goal..." : "Add Goal"}
+          {editingGoalId ? (updateGoal.isPending ? "Updating Goal..." : "Update Goal") : (addGoal.isPending ? "Adding Goal..." : "Add Goal")}
         </button>
 
         {goals.length > 0 && (
           <div className="space-y-3 pt-2">
             <div className="text-xs uppercase tracking-widest text-muted-foreground">Current Goals</div>
             {goals.map((goal) => (
-              <div key={goal.id} className="rounded-2xl bg-secondary/60 p-4">
+              <div 
+                key={goal.id} 
+                className={cn(
+                  "rounded-2xl p-4 transition-all cursor-pointer active:scale-95",
+                  editingGoalId === goal.id ? "bg-primary text-primary-foreground shadow-float" : "bg-secondary/60 hover:bg-secondary/80"
+                )}
+                onClick={() => startEditingGoal(goal)}
+              >
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <div className="font-semibold capitalize">{goal.type.toLowerCase()} goal</div>
-                    <div className="text-xs text-muted-foreground">Deadline: {format(new Date(goal.deadline), "d MMM yyyy")}</div>
+                    <div className="text-xs opacity-70">Deadline: {format(new Date(goal.deadline), "d MMM yyyy")}</div>
                   </div>
                   <div className="text-right">
                     <div className="font-display text-lg font-bold">{formatRupees(goal.targetAmount)}</div>
-                    <div className="text-xs text-muted-foreground">{Math.round(goal.progress)}% complete</div>
+                    <div className="text-xs opacity-70">{Math.round(goal.progress)}% complete</div>
                   </div>
                 </div>
               </div>

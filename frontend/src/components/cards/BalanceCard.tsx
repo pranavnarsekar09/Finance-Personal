@@ -13,10 +13,11 @@ interface BalanceCardProps {
   savingsChange: number;
   dailyLimit: number;
   userName: string;
+  monthlySavings: number;
   latestExpense?: Expense | null;
 }
 
-export function BalanceCard({ total, spent, todaySpent, available, savings, savingsChange, dailyLimit, userName, latestExpense }: BalanceCardProps) {
+export function BalanceCard({ total, spent, todaySpent, available, savings, savingsChange, dailyLimit, userName, monthlySavings, latestExpense }: BalanceCardProps) {
   const [api, setApi] = useState<CarouselApi>();
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -57,6 +58,12 @@ export function BalanceCard({ total, spent, todaySpent, available, savings, savi
       amount: savings,
       caption: savingsChange >= 0 ? `${formatRupees(savingsChange)} added today` : `${formatRupees(Math.abs(savingsChange))} used today`,
       progress: total > 0 ? (savings / total) * 100 : 0,
+    },
+    {
+      label: "Monthly Savings",
+      amount: monthlySavings,
+      caption: `Saved based on daily limit this month`,
+      progress: total > 0 ? (monthlySavings / total) * 100 : 0,
     },
   ];
 

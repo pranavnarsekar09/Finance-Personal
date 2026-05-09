@@ -23,8 +23,12 @@ public class FinanceController {
     }
 
     @GetMapping
-    public FinanceResponse getFinance(@RequestParam String userId) {
-        return financeService.getFinance(userId);
+    public FinanceResponse getFinance(
+            @RequestParam String userId,
+            @RequestParam(required = false) String today
+    ) {
+        java.time.LocalDate todayDate = today != null ? java.time.LocalDate.parse(today) : java.time.LocalDate.now();
+        return financeService.getFinance(userId, todayDate);
     }
 
     @PutMapping

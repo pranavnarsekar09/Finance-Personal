@@ -10,6 +10,7 @@ public record ProfileResponse(
         String email,
         Double monthlyBudget,
         Double calorieGoal,
+        Double availableBalance,
         List<UserCategory> categories,
         Instant createdAt,
         boolean onboardingComplete

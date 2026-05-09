@@ -13,6 +13,7 @@ export interface Profile {
   email: string;
   monthlyBudget: number;
   calorieGoal: number;
+  availableBalance?: number;
   categories: UserCategory[];
   createdAt: string;
   onboardingComplete: boolean;
@@ -23,6 +24,7 @@ export interface ProfileUpsertRequest {
   email: string;
   monthlyBudget: number;
   calorieGoal: number;
+  availableBalance?: number;
   categories: UserCategory[];
 }
 
@@ -111,6 +113,13 @@ export interface CreateGoalRequest {
   deadline: string;
 }
 
+export interface UpdateGoalRequest {
+  type?: GoalType;
+  targetAmount?: number;
+  currentAmount?: number;
+  deadline?: string;
+}
+
 export interface Insight {
   userId: string;
   headline: string;
@@ -155,6 +164,7 @@ export interface DashboardSummary {
   dailySpending: DailySpendSummary[];
   streak: number;
   spentToday: number;
+  monthlySavings: number;
   spending: SpendingSummary;
 }
 

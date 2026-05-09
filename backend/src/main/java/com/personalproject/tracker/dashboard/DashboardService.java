@@ -104,15 +104,22 @@ public class DashboardService {
                 ))
                 .toList();
 
-        List<com.personalproject.tracker.dashboard.dto.DailySpendSummary> dailySpending = expenses.stream()
+        // For the 7-day spend chart
+        LocalDate sevenDaysAgo = today.minusDays(6);
+        List<com.personalproject.tracker.expense.Expense> sevenDayExpenses = 
+                expenseRepository.findByUserIdAndDateGreaterThanEqualAndDateLessThan(userId, sevenDaysAgo, today.plusDays(1));
+
+        Map<LocalDate, Double> sevenDaySpentMap = sevenDayExpenses.stream()
                 .collect(Collectors.groupingBy(
                         com.personalproject.tracker.expense.Expense::getDate,
                         Collectors.summingDouble(com.personalproject.tracker.expense.Expense::getAmount)
-                ))
-                .entrySet().stream()
-                .map(entry -> new com.personalproject.tracker.dashboard.dto.DailySpendSummary(entry.getKey(), entry.getValue()))
-                .sorted(Comparator.comparing(com.personalproject.tracker.dashboard.dto.DailySpendSummary::date))
-                .toList();
+                ));
+
+        List<com.personalproject.tracker.dashboard.dto.DailySpendSummary> dailySpending = new java.util.ArrayList<>();
+        for (int i = 0; i < 7; i++) {
+            LocalDate date = sevenDaysAgo.plusDays(i);
+            dailySpending.add(new com.personalproject.tracker.dashboard.dto.DailySpendSummary(date, sevenDaySpentMap.getOrDefault(date, 0.0)));
+        }
 
         double spentToday = expenseRepository.findByUserIdAndDate(userId, today)
                 .stream()
@@ -138,6 +145,9 @@ public class DashboardService {
         }
 
         FinanceService.FinanceSnapshot financeSnapshot = financeService.getFinanceSnapshot(userId, today);
+        
+        // Calculate Monthly Savings: (Daily Limit * Days Elapsed) - Total Spent So Far
+        double monthlySavings = (financeSnapshot.dailyLimit() * today.getDayOfMonth()) - totalSpent;
 
         return new DashboardSummaryResponse(
                 userId,
@@ -152,6 +162,7 @@ public class DashboardService {
                 dailySpending,
                 streak,
                 spentToday,
+                monthlySavings,
                 new SpendingSummary(
                         financeSnapshot.dailyLimit(),
                         financeSnapshot.buffer(),
