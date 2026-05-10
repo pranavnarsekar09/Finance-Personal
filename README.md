@@ -1,91 +1,91 @@
 # Project Overview
 
-This repository contains a full‑stack personal finance and health tracking application. The **frontend** is built with React, TypeScript, Tailwind CSS, and Framer Motion. Navigation is driven by a three‑tab layout on the **Home** page, plus dedicated pages for health, money, and user profile.
+Welcome to **Personal Finance Tracker** – a full‑stack application that helps you manage your finances, track meals, and visualize spending habits. The frontend is built with React, TypeScript, and a modern design system, providing a smooth, swipe‑driven experience on both desktop and mobile.
 
 ---
 
-## 📋 Home Page – Tab Navigation
+## Navigation Tabs
 
-The `Home` component (`src/pages/Home.tsx`) defines three top‑level tabs stored in `HOME_TABS`:
+The app features four primary top‑level tabs, each representing a major area of functionality. Some tabs contain sub‑tabs for finer navigation.
 
-| Tab | File | What It Shows | Key Components Used |
-|-----|------|---------------|---------------------|
-| **overview** | `src/pages/Home.tsx` (rendered via `<OverviewTab />`) | A dashboard summary of the current month: profile greeting, budget snapshot, recent spending, calorie intake, streak, and quick actions. | `BalanceCard`, `InsightCard`, `StreakCard`, `CalorieBar`, `JarsRow`, `SpendChart`, `CategoryPressure` |
-| **budget** | `src/pages/Home.tsx` (rendered via `<BudgetTab />`) | Settings for monthly budget, calorie goal, goal creation, and expense‑trend chart. | `SpendingTrendChart`, `Select`, `Input` (for budget, calorie, goal fields) |
-| **spending** | `src/pages/Home.tsx` (rendered via `<SpendingTab />`) | Current daily limit, buffer, savings, and UI to edit those values. Also displays recent daily finance records. | `Input`, `QueryLoadingCard`, `QueryErrorCard` |
-
-The tab bar is animated with Framer Motion; swiping left/right changes the tab with a directional animation.
-
----
-
-## 🔬 Health Page (`src/pages/Health.tsx`)
-
-| Section | Description |
-|---------|-------------|
-| **Today View** | Shows the remaining calories for the day, arcs for calories, protein, carbs, and fat, plus quick buttons to log a meal or use the AI‑photo analyzer. |
-| **Week View** | Displays weekly averages for calories, protein, carbs, fat, and fiber, along with a mock bar‑chart of daily intake and a history list of each day’s totals. |
-
-Key hooks: `useDashboard`, `useFoodLogs`, `useDeleteFoodLog`. UI uses `motion.div` for animated transitions between “today” and “week”.
+| Tab | Sub‑Tabs | Description | Core Components |
+|-----|----------|-------------|-----------------|
+| **Home** | `overview` • `budget` • `spending` | Dashboard overview displaying balances, goals, spending charts and quick actions. | `BalanceCard`, `InsightCard`, `StreakCard`, `CalorieBar`, `JarsRow`, `SpendChart`, `CategoryPressure`, `Tabs` (internal UI), `AnimatePresence`, `motion` |
+| **Money** | `list` • `calendar` | Manage and view every expense. Switch between a list view and a calendar heat‑map view. | `ExpenseItem`, `CalendarGrid`, `Tabs`, `AnimatePresence`, `motion`, `useSwipeNative` |
+| **Health** | `today` • `week` | Log meals, view daily nutrition, and see a weekly summary of calories, protein, carbs & fats. | SVG arc visualisation, `Utensils`, `Camera`, `useSwipeNative`, `JarsRow`‑style progress bars, `useDashboard`, `useFoodLogs` |
+| **You** (Profile) | – | User profile management, theme toggle, category administration, and data export (JSON / PDF / Excel). | `Dialog`, `DialogContent`, `DialogHeader`, `DialogTitle`, `DialogFooter`, `Input`, `Button`, `AlertCircle`, `FileText`, `FileSpreadsheet`, `Sun`, `Moon`, `Check`, `Plus`, `Edit2`, `Trash2`, data‑export utilities (`jspdf`, `xlsx`) |
 
 ---
 
-## 💰 Money Page (`src/pages/Money.tsx`)
+## Tab Details
 
-*(Not shown in the current file list but exists in the `pages` folder.)*
+### Home Tab
 
-- Shows the user’s **finance settings**: daily limit, buffer, savings, and tracking start date.
-- Allows editing those values and saving them via `useSaveFinance`.
-- Lists recent daily finance records with buffer and savings outcomes.
-- Provides a quick‑save button and explanatory banner.
+- **Overview** – Shows the current month’s budget status, recent expenses, and quick‑action cards (`BalanceCard`, `InsightCard`).
+- **Budget** – Allows editing of the monthly budget, calorie goal, and managing savings goals. Utilises `BudgetTab` component (contains form inputs, goal list, and spending trend chart).
+- **Spending** – Lists recent transactions with filters, search, and pagination. Uses `SpendingTab` component and `ExpenseItem` cards.
 
----
+#### Key Components
+- `BalanceCard` – Displays total budget, spent amount, available balance, and streak.
+- `InsightCard` – Shows AI‑generated financial insights.
+- `StreakCard` & `CalorieBar` – Visualise daily streaks and calorie consumption.
+- `JarsRow` – Savings‑jar visualisation.
+- `SpendChart` – Monthly spending line chart.
+- `CategoryPressure` – Category‑wise spending breakdown.
 
-## 🙋‍♀️ You Page (`src/pages/You.tsx`)
+### Money Tab
 
-*(Also present in `src/pages`.)*
+- **List View** – Tabular list of expenses with filtering by category and full‑text search. Each row is an `ExpenseItem` with delete capability.
+- **Calendar View** – Calendar heat‑map where each day shows a coloured dot if expenses exist. Clicking a day reveals that day’s expenses.
 
-- Profile summary with the user’s initials avatar.
-- Settings to update the profile name, email, monthly budget, and calorie goal.
-- Goal management UI: create new goals, view current goals, and see progress bars.
-- Uses the same `Select` and `Input` components as the Budget tab.
+#### Key Components
+- `ExpenseItem` – Card displaying expense details, amount, and delete button.
+- `CalendarGrid` – Renders a month grid, handles month navigation, and displays daily total.
+- `Tabs` – Custom UI component (`src/components/ui/tabs.tsx`) providing the list/calendar toggle.
 
----
+### Health Tab
 
-## 📚 Common UI Building Blocks
+- **Today** – Radial progress arcs visualise calories, protein, carbs, and fat consumed today versus goals. Provides quick‑action buttons to log a meal or launch the AI‑photo analyzer.
+- **Week** – Summarises weekly averages for calories, macro‑nutrients, and displays a mock bar chart for each day of the week.
 
-| Component | Purpose |
-|-----------|---------|
-| `BalanceCard` | Displays total budget, spent amount, today’s spend, remaining budget, and savings.
-| `InsightCard` | Shows AI‑generated insights (e.g., spending patterns).
-| `StreakCard` | Visualizes the current streak of meeting goals.
-| `CalorieBar` | Circular progress of calories consumed vs goal.
-| `JarsRow` | Visual representation of budget “jars”.
-| `SpendChart` | Line chart of daily spending.
-| `CategoryPressure` | Bar chart of spending per category.
-| `SpendingTrendChart` | Line chart for expense trends over time.
-| `QueryLoadingCard` / `QueryErrorCard` | Standard loading and error UI for API queries.
+#### Key Components
+- SVG arc visualisation (custom circles for each macro).
+- `Utensils`, `Camera` icons for actions.
+- `useDashboard` & `useFoodLogs` hooks fetch data.
+- `JarsRow`‑style progress bars for macro percentages.
 
----
+### You (Profile) Tab
 
-## 🛠️ Implementation Notes
+- Shows user avatar, name, email, and budget/calorie summary.
+- **Categories** – Manage spending categories (add, edit, delete) via a modal dialog.
+- **Appearance** – Light/Dark theme toggle.
+- **Data Management** – Export all data (profile, goals, finance, expenses, food logs) as JSON, PDF, or Excel files.
 
-- **State management** is handled with React Query hooks (`useDashboard`, `useFinance`, `useGoals`, etc.).
-- **Animations** use Framer Motion’s `AnimatePresence` and direction‑aware variants for smooth tab transitions.
-- **Swiping** is powered by a custom `useSwipeNative` hook that updates the tab based on left/right gestures.
-- **Styling** relies on Tailwind CSS with a custom design token palette (mint, coral, sun, sky, etc.) for a premium glass‑morphism look.
-
----
-
-## 📄 How to Run
-
-```bash
-# From the project root
-npm install
-npm run dev   # Starts the Vite dev server (frontend) and Spring Boot backend separately
-```
-
-The frontend will be served at `http://localhost:5173` and will proxy API calls to the backend (running on the default Spring port).
+#### Key Components
+- `Dialog` family (`DialogContent`, `DialogHeader`, etc.) for category CRUD.
+- Theme switch buttons with `Sun`/`Moon` icons.
+- Export buttons (`FileText`, `Download`, `FileSpreadsheet`).
+- Storage usage indicator using `useStorageUsage`.
+- Data‑export helpers (`jspdf`, `jspdf-autotable`, `xlsx`).
 
 ---
 
-*This README provides a quick reference for developers and contributors to understand each tab/page, what it displays, and the core components involved.*
+## How to Navigate
+
+1. **Swipe** left/right or tap the tab buttons at the top of each page to switch between main tabs.
+2. Within a tab, tap sub‑tab buttons (e.g., *Overview*, *Budget*, *Spending*) to change the view.
+3. Use the *Add* / *Edit* buttons in the **You** tab to manage categories and personal settings.
+4. Export your data from the **You** tab anytime via the *JSON / PDF / Excel* buttons.
+
+---
+
+## Development Notes
+
+- All UI components live under `src/components/ui/` (e.g., `tabs.tsx`, `button.tsx`).
+- State management is handled by React hooks (`useState`, `useEffect`, custom `useApi` hooks).
+- Swipe gestures are powered by `useSwipeNative` and `useHaptic` for tactile feedback on mobile.
+- The app follows a dark‑mode‑first design with glass‑morphism and smooth micro‑animations.
+
+---
+
+*Happy budgeting & healthy eating!*

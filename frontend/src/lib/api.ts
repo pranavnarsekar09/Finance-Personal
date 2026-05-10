@@ -9,6 +9,7 @@ import type {
   CreateFoodLogRequest,
   DashboardSummary,
   Expense,
+  AiDashboard,
   FoodAnalysis,
   FoodLog,
   Goal,
@@ -125,6 +126,7 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   getInsight: (userId: string) => request<Insight>(`/api/ai/insight?userId=${encodeURIComponent(userId)}`),
+  getAiDashboard: (userId: string) => request<AiDashboard>(`/api/ai/dashboard?userId=${encodeURIComponent(userId)}`),
   chat: (userId: string, message: string) =>
     request<ChatResponse>(`/api/ai/chat?userId=${encodeURIComponent(userId)}`, {
       method: "POST",

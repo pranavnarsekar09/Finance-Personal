@@ -129,6 +129,42 @@ export interface Insight {
   topCategory: string;
 }
 
+export interface AiPrediction {
+  title: string;
+  detail: string;
+  tone: string;
+}
+
+export interface AiRecommendation {
+  title: string;
+  detail: string;
+  impact: string;
+  breakdown: string[];
+}
+
+export interface AiAnomaly {
+  title: string;
+  detail: string;
+  severity: string;
+}
+
+export interface AiScore {
+  name: string;
+  value: number;
+  trend: "up" | "down" | "flat" | string;
+  explanation: string;
+  breakdown: string[];
+}
+
+export interface AiDashboard {
+  userId: string;
+  generatedAt: string;
+  predictions: AiPrediction[];
+  recommendations: AiRecommendation[];
+  anomalies: AiAnomaly[];
+  scores: AiScore[];
+}
+
 export interface StorageUsage {
   usedBytes: number;
   totalBytes: number;

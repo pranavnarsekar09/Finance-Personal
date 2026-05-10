@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Wallet, Apple, User, Plus, Sparkles } from "lucide-react";
+import { Home, Wallet, Apple, User, Plus, Sparkles, BrainCircuit } from "lucide-react";
 import { cn } from "@/lib/utils";
 import HomePage from "@/pages/Home";
 import MoneyPage from "@/pages/Money";
 import HealthPage from "@/pages/Health";
+import AIPage from "@/pages/AI";
 import YouPage from "@/pages/You";
 import { ChatSheet } from "@/components/sheets/ChatSheet";
 import { AddExpenseSheet } from "@/components/sheets/AddExpenseSheet";
@@ -17,6 +18,7 @@ const tabs = [
   { id: "home", label: "Home", icon: Home, Comp: HomePage },
   { id: "money", label: "Money", icon: Wallet, Comp: MoneyPage },
   { id: "health", label: "Health", icon: Apple, Comp: HealthPage },
+  { id: "ai", label: "Ai", icon: BrainCircuit, Comp: AIPage },
   { id: "you", label: "You", icon: User, Comp: YouPage },
 ] as const;
 

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient, useQueries } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { DEFAULT_USER_ID } from "@/lib/constants";
@@ -17,6 +18,88 @@ const CRITICAL_QUERY_OPTIONS = {
   retry: 0,
   refetchOnWindowFocus: false as const,
 };
+
+const AI_DASHBOARD_STORAGE_PREFIX = "fintrack:ai-dashboard:";
+const AI_INSIGHT_STORAGE_PREFIX = "fintrack:ai-insight:";
+
+function getAiDashboardStorageKey(userId: string) {
+  return `${AI_DASHBOARD_STORAGE_PREFIX}${userId}`;
+}
+
+function getAiInsightStorageKey(userId: string) {
+  return `${AI_INSIGHT_STORAGE_PREFIX}${userId}`;
+}
+
+function readAiDashboardCache(userId: string) {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const raw = window.localStorage.getItem(getAiDashboardStorageKey(userId));
+    return raw ? JSON.parse(raw) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function writeAiDashboardCache(userId: string, data: unknown) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(getAiDashboardStorageKey(userId), JSON.stringify(data));
+  } catch {
+    // Ignore storage failures and keep in-memory query behavior.
+  }
+}
+
+function clearAiDashboardCache(userId: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(getAiDashboardStorageKey(userId));
+  } catch {
+    // Ignore storage failures and keep in-memory query behavior.
+  }
+}
+
+function readAiInsightCache(userId: string) {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const raw = window.localStorage.getItem(getAiInsightStorageKey(userId));
+    return raw ? JSON.parse(raw) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function writeAiInsightCache(userId: string, data: unknown) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(getAiInsightStorageKey(userId), JSON.stringify(data));
+  } catch {
+    // Ignore storage failures and keep in-memory query behavior.
+  }
+}
+
+function clearAiInsightCache(userId: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(getAiInsightStorageKey(userId));
+  } catch {
+    // Ignore storage failures and keep in-memory query behavior.
+  }
+}
+
+function invalidateAiDashboard(queryClient: ReturnType<typeof useQueryClient>, userId: string = DEFAULT_USER_ID) {
+  clearAiDashboardCache(userId);
+  queryClient.invalidateQueries({ queryKey: ["aiDashboard", userId] });
+}
+
+function invalidateAiInsight(queryClient: ReturnType<typeof useQueryClient>, userId: string = DEFAULT_USER_ID) {
+  clearAiInsightCache(userId);
+  queryClient.invalidateQueries({ queryKey: ["insight", userId] });
+}
+
+function invalidateAiCaches(queryClient: ReturnType<typeof useQueryClient>, userId: string = DEFAULT_USER_ID) {
+  invalidateAiDashboard(queryClient, userId);
+  invalidateAiInsight(queryClient, userId);
+}
 
 export function useProfile(userId: string = DEFAULT_USER_ID, enabled: boolean = true) {
   return useQuery({
@@ -109,13 +192,48 @@ export function useExpenseTrend(userId: string = DEFAULT_USER_ID, enabled: boole
 }
 
 export function useInsight(userId: string = DEFAULT_USER_ID) {
-  return useQuery({
+  const query = useQuery({
     queryKey: ["insight", userId],
     queryFn: () => api.getInsight(userId),
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    initialData: () => readAiInsightCache(userId),
+    staleTime: Infinity,
+    gcTime: Infinity,
     retry: 0,
     refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
+
+  useEffect(() => {
+    if (query.data) {
+      writeAiInsightCache(userId, query.data);
+    }
+  }, [query.data, userId]);
+
+  return query;
+}
+
+export function useAiDashboard(userId: string = DEFAULT_USER_ID, enabled: boolean = true) {
+  const query = useQuery({
+    queryKey: ["aiDashboard", userId],
+    queryFn: () => api.getAiDashboard(userId),
+    enabled,
+    initialData: () => readAiDashboardCache(userId),
+    staleTime: Infinity,
+    gcTime: Infinity,
+    retry: 0,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  });
+
+  useEffect(() => {
+    if (query.data) {
+      writeAiDashboardCache(userId, query.data);
+    }
+  }, [query.data, userId]);
+
+  return query;
 }
 
 export function useCalendar(userId: string = DEFAULT_USER_ID, month: string) {
@@ -136,6 +254,7 @@ export function useAddExpense() {
       queryClient.invalidateQueries({ queryKey: ["expenses"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["calendar"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["finance", variables.userId], exact: false });
+      invalidateAiCaches(queryClient, variables.userId);
     },
   });
 }
@@ -151,6 +270,7 @@ export function useSaveFoodLog() {
       queryClient.invalidateQueries({ queryKey: ["foodLogs"] });
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
       queryClient.invalidateQueries({ queryKey: ["finance"] });
+      invalidateAiCaches(queryClient);
     },
   });
 }
@@ -162,6 +282,7 @@ export function useSaveProfile(userId: string = DEFAULT_USER_ID) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile", userId] });
       queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
+      invalidateAiCaches(queryClient, userId);
     },
   });
 }
@@ -173,6 +294,7 @@ export function useSaveFinance(userId: string = DEFAULT_USER_ID) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["finance", userId] });
       queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
+      invalidateAiCaches(queryClient, userId);
     },
   });
 }
@@ -184,6 +306,7 @@ export function useUpdateDailyFinance() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["finance", variables.userId] });
       queryClient.invalidateQueries({ queryKey: ["dashboard", variables.userId] });
+      invalidateAiCaches(queryClient, variables.userId);
     },
   });
 }
@@ -195,6 +318,7 @@ export function useAddGoal() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["goals"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateAiCaches(queryClient);
     },
   });
 }
@@ -206,6 +330,7 @@ export function useUpdateGoal() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["goals"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateAiCaches(queryClient);
     },
   });
 }
@@ -218,6 +343,7 @@ export function useSaveCategories(userId: string = DEFAULT_USER_ID) {
       queryClient.invalidateQueries({ queryKey: ["profile", userId] });
       queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
       queryClient.invalidateQueries({ queryKey: ["expenses", userId] });
+      invalidateAiCaches(queryClient, userId);
     },
   });
 }
@@ -238,6 +364,7 @@ export function useDeleteExpense() {
       queryClient.invalidateQueries({ queryKey: ["foodLogs"] });
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
       queryClient.invalidateQueries({ queryKey: ["finance"] });
+      invalidateAiCaches(queryClient);
     },
   });
 }
@@ -250,6 +377,7 @@ export function useDeleteFoodLog() {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["foodLogs"] });
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
+      invalidateAiCaches(queryClient);
     },
   });
 }
@@ -263,6 +391,7 @@ export function useDeleteExpensesByMonth(userId: string = DEFAULT_USER_ID) {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
       queryClient.invalidateQueries({ queryKey: ["finance"] });
+      invalidateAiCaches(queryClient, userId);
     },
   });
 }
@@ -275,6 +404,7 @@ export function useDeleteMealsByMonth(userId: string = DEFAULT_USER_ID) {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["foodLogs"] });
       queryClient.invalidateQueries({ queryKey: ["calendar"] });
+      invalidateAiCaches(queryClient, userId);
     },
   });
 }
