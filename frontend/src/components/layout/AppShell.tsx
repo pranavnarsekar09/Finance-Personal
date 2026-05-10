@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Wallet, Apple, User, Plus, Sparkles, BrainCircuit } from "lucide-react";
+import { Home, Wallet, Apple, User, Plus, Sparkles, BrainCircuit, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import HomePage from "@/pages/Home";
 import MoneyPage from "@/pages/Money";
@@ -29,6 +29,7 @@ export default function AppShell() {
   const [addOpen, setAddOpen] = useState(false);
   const [mealOpen, setMealOpen] = useState(false);
   const [analyzeOpen, setAnalyzeOpen] = useState(false);
+  const [fabMenuOpen, setFabMenuOpen] = useState(false);
   const modalHistoryPushed = useRef(false);
 
   const active = useMemo(() => {
@@ -43,6 +44,7 @@ export default function AppShell() {
     setAddOpen(false);
     setMealOpen(false);
     setAnalyzeOpen(false);
+    setFabMenuOpen(false);
   };
 
   useEffect(() => {
@@ -67,6 +69,14 @@ export default function AppShell() {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, [activeSheet]);
+
+  useEffect(() => {
+    if (activeSheet) setFabMenuOpen(false);
+  }, [activeSheet]);
+
+  useEffect(() => {
+    setFabMenuOpen(false);
+  }, [location.pathname]);
 
   const closeSheet = () => {
     if (window.history.state?.sheet) {
@@ -100,21 +110,63 @@ export default function AppShell() {
           </div>
         </div>
 
-        {/* Floating action cluster */}
-        <div className="fixed bottom-28 right-5 z-40 flex flex-col gap-3">
+        {/* Single FAB: expands to Gemini chat + Add expense */}
+        {fabMenuOpen ? (
           <button
-            onClick={() => setChatOpen(true)}
-            aria-label="Open AI chat"
-            className="h-12 w-12 rounded-full bg-card shadow-float flex items-center justify-center hover:scale-105 transition"
-          >
-            <Sparkles className="h-5 w-5 text-primary" />
-          </button>
+            type="button"
+            aria-label="Close quick actions"
+            className="fixed inset-0 z-[39] cursor-default bg-black/20 backdrop-blur-[1px]"
+            onClick={() => setFabMenuOpen(false)}
+          />
+        ) : null}
+        <div className="fixed bottom-28 right-5 z-40 flex flex-col items-end gap-2">
+          <AnimatePresence>
+            {fabMenuOpen ? (
+              <motion.div
+                key="fab-actions"
+                initial={{ opacity: 0, y: 16, scale: 0.92 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 12, scale: 0.95 }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                className="flex flex-col items-end gap-2"
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setChatOpen(true);
+                    setFabMenuOpen(false);
+                  }}
+                  className="flex items-center gap-3 rounded-full bg-card pl-4 pr-2 py-2 shadow-float border border-border/40 hover:scale-[1.02] transition"
+                >
+                  <span className="text-sm font-medium text-foreground">Gemini chat</span>
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-mint">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAddOpen(true);
+                    setFabMenuOpen(false);
+                  }}
+                  className="flex items-center gap-3 rounded-full bg-card pl-4 pr-2 py-2 shadow-float border border-border/40 hover:scale-[1.02] transition"
+                >
+                  <span className="text-sm font-medium text-foreground">Add expense</span>
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-dark text-white">
+                    <Plus className="h-6 w-6" />
+                  </span>
+                </button>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
           <button
-            onClick={() => setAddOpen(true)}
-            aria-label="Add expense"
-            className="h-14 w-14 rounded-full bg-surface-dark shadow-float flex items-center justify-center hover:scale-105 transition"
+            type="button"
+            onClick={() => setFabMenuOpen((o) => !o)}
+            aria-expanded={fabMenuOpen}
+            aria-label={fabMenuOpen ? "Close quick actions" : "Open quick actions"}
+            className="h-14 w-14 rounded-full bg-surface-dark text-white shadow-float flex items-center justify-center hover:scale-105 transition"
           >
-            <Plus className="h-6 w-6" />
+            {fabMenuOpen ? <X className="h-6 w-6" /> : <Plus className="h-6 w-6" />}
           </button>
         </div>
 
