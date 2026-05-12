@@ -408,6 +408,19 @@ export function useDeleteMealsByMonth(userId: string = DEFAULT_USER_ID) {
     },
   });
 }
+export function useAddMoney(userId: string = DEFAULT_USER_ID) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (amount: number) => api.addMoney(userId, amount),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["finance"] });
+      invalidateAiCaches(queryClient, userId);
+    },
+  });
+}
+
 export function useAnalyzeFood() {
   return useMutation({
     mutationFn: (payload: { imageUrl?: string; note?: string }) => api.analyzeFood(payload),

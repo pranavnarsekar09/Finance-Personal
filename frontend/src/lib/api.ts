@@ -152,4 +152,9 @@ export const api = {
     request<void>(`/api/history/calendar/meals/month?userId=${encodeURIComponent(userId)}&month=${month}`, {
       method: "DELETE",
     }),
+  addMoney: (userId: string, amount: number) =>
+    request<Profile>(`/api/profile/add-money?userId=${encodeURIComponent(userId)}`, {
+      method: "POST",
+      body: JSON.stringify({ amount }),
+    }),
 };

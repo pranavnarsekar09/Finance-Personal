@@ -5,9 +5,11 @@ export const SheetContext = createContext<{
   setAddOpen: (open: boolean) => void;
   setChatOpen: (open: boolean) => void;
   setAnalyzeOpen: (open: boolean) => void;
+  setAddMoneyOpen: (open: boolean) => void;
 }>({
   setMealOpen: () => {},
   setAddOpen: () => {},
   setChatOpen: () => {},
   setAnalyzeOpen: () => {},
+  setAddMoneyOpen: () => {},
 });

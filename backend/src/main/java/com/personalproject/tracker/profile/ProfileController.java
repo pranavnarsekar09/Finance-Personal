@@ -1,10 +1,12 @@
 package com.personalproject.tracker.profile;
 
+import com.personalproject.tracker.profile.dto.AddMoneyRequest;
 import com.personalproject.tracker.profile.dto.ProfileResponse;
 import com.personalproject.tracker.profile.dto.ProfileUpsertRequest;
 import com.personalproject.tracker.profile.dto.UpdateCategoriesRequest;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,5 +42,13 @@ public class ProfileController {
             @Valid @RequestBody UpdateCategoriesRequest request
     ) {
         return profileService.updateCategories(userId, request);
+    }
+
+    @PostMapping("/add-money")
+    public ProfileResponse addMoney(
+            @RequestParam String userId,
+            @Valid @RequestBody AddMoneyRequest request
+    ) {
+        return profileService.addMoney(userId, request.amount());
     }
 }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Wallet, Apple, User, Plus, Sparkles, BrainCircuit, X } from "lucide-react";
+import { Home, Wallet, Apple, User, Plus, Sparkles, BrainCircuit, X, Banknote } from "lucide-react";
 import { cn } from "@/lib/utils";
 import HomePage from "@/pages/Home";
 import MoneyPage from "@/pages/Money";
@@ -12,6 +12,7 @@ import { ChatSheet } from "@/components/sheets/ChatSheet";
 import { AddExpenseSheet } from "@/components/sheets/AddExpenseSheet";
 import { LogMealSheet } from "@/components/sheets/LogMealSheet";
 import { AnalyzeFoodSheet } from "@/components/sheets/AnalyzeFoodSheet";
+import { AddMoneySheet } from "@/components/sheets/AddMoneySheet";
 import { SheetContext } from "@/context/SheetContext";
 
 const tabs = [
@@ -29,6 +30,7 @@ export default function AppShell() {
   const [addOpen, setAddOpen] = useState(false);
   const [mealOpen, setMealOpen] = useState(false);
   const [analyzeOpen, setAnalyzeOpen] = useState(false);
+  const [addMoneyOpen, setAddMoneyOpen] = useState(false);
   const [fabMenuOpen, setFabMenuOpen] = useState(false);
   const modalHistoryPushed = useRef(false);
 
@@ -37,13 +39,14 @@ export default function AppShell() {
     return tabs.some((t) => t.id === path) ? (path as (typeof tabs)[number]["id"]) : "home";
   }, [location.pathname]);
 
-  const activeSheet = chatOpen ? "chat" : addOpen ? "add" : mealOpen ? "meal" : analyzeOpen ? "analyze" : null;
+  const activeSheet = chatOpen ? "chat" : addOpen ? "add" : mealOpen ? "meal" : analyzeOpen ? "analyze" : addMoneyOpen ? "addMoney" : null;
 
   const closeAllSheets = () => {
     setChatOpen(false);
     setAddOpen(false);
     setMealOpen(false);
     setAnalyzeOpen(false);
+    setAddMoneyOpen(false);
     setFabMenuOpen(false);
   };
 
@@ -89,7 +92,7 @@ export default function AppShell() {
   const Active = tabs.find((t) => t.id === active)!.Comp;
 
   return (
-    <SheetContext.Provider value={{ setMealOpen, setAddOpen, setChatOpen, setAnalyzeOpen }}>
+    <SheetContext.Provider value={{ setMealOpen, setAddOpen, setChatOpen, setAnalyzeOpen, setAddMoneyOpen }}>
       <div className="min-h-screen overflow-x-hidden bg-gradient-cream grain">
         <div
           className="mx-auto max-w-md overflow-x-hidden md:max-w-2xl pb-32 px-5 pt-6"
@@ -141,6 +144,19 @@ export default function AppShell() {
                   <span className="text-sm font-medium text-foreground">Gemini chat</span>
                   <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-mint">
                     <Sparkles className="h-5 w-5 text-primary" />
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAddMoneyOpen(true);
+                    setFabMenuOpen(false);
+                  }}
+                  className="flex items-center gap-3 rounded-full bg-card pl-4 pr-2 py-2 shadow-float border border-border/40 hover:scale-[1.02] transition"
+                >
+                  <span className="text-sm font-medium text-foreground">Add money</span>
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-600 text-white">
+                    <Banknote className="h-5 w-5" />
                   </span>
                 </button>
                 <button
@@ -206,6 +222,7 @@ export default function AppShell() {
         <AddExpenseSheet open={addOpen} onClose={closeSheet} />
         <LogMealSheet open={mealOpen} onClose={closeSheet} />
         <AnalyzeFoodSheet open={analyzeOpen} onClose={closeSheet} />
+        <AddMoneySheet open={addMoneyOpen} onClose={closeSheet} />
       </div>
     </SheetContext.Provider>
   );

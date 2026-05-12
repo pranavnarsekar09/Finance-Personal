@@ -55,6 +55,24 @@ public class ProfileService {
         return toResponse(savedProfile);
     }
 
+    public ProfileResponse addMoney(String userId, double amount) {
+        validateUserId(userId);
+        if (amount == 0) {
+            throw new IllegalArgumentException("Amount cannot be zero");
+        }
+
+        UserProfile profile = findProfile(userId);
+
+        double currentBalance = profile.getAvailableBalance() != null ? profile.getAvailableBalance() : 0.0;
+        double currentBudget = profile.getMonthlyBudget() != null ? profile.getMonthlyBudget() : 0.0;
+
+        profile.setAvailableBalance(currentBalance + amount);
+        profile.setMonthlyBudget(currentBudget + amount);
+
+        UserProfile savedProfile = profileRepository.save(profile);
+        return toResponse(savedProfile);
+    }
+
     public ProfileResponse updateCategories(String userId, UpdateCategoriesRequest request) {
         validateUserId(userId);
         validateCategories(request.categories(), true);
