@@ -139,11 +139,11 @@ export default function AppShell() {
                     setChatOpen(true);
                     setFabMenuOpen(false);
                   }}
-                  className="flex items-center gap-3 rounded-full bg-card pl-4 pr-2 py-2 shadow-float border border-border/40 hover:scale-[1.02] transition"
+                  className="group flex items-center gap-3 rounded-full bg-card pl-4 pr-2 py-2 shadow-float border border-border/40 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(139,92,246,0.2)] transition-all duration-200"
                 >
                   <span className="text-sm font-medium text-foreground">Gemini chat</span>
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-mint">
-                    <Sparkles className="h-5 w-5 text-primary" />
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 group-hover:scale-110 transition-transform duration-200">
+                    <Sparkles className="h-5 w-5 text-white" />
                   </span>
                 </button>
                 <button
@@ -152,11 +152,11 @@ export default function AppShell() {
                     setAddMoneyOpen(true);
                     setFabMenuOpen(false);
                   }}
-                  className="flex items-center gap-3 rounded-full bg-card pl-4 pr-2 py-2 shadow-float border border-border/40 hover:scale-[1.02] transition"
+                  className="group flex items-center gap-3 rounded-full bg-card pl-4 pr-2 py-2 shadow-float border border-border/40 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(16,185,129,0.2)] transition-all duration-200"
                 >
                   <span className="text-sm font-medium text-foreground">Add money</span>
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-600 text-white">
-                    <Banknote className="h-5 w-5" />
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-green-600 group-hover:scale-110 transition-transform duration-200">
+                    <Banknote className="h-5 w-5 text-white" />
                   </span>
                 </button>
                 <button
@@ -165,11 +165,11 @@ export default function AppShell() {
                     setAddOpen(true);
                     setFabMenuOpen(false);
                   }}
-                  className="flex items-center gap-3 rounded-full bg-card pl-4 pr-2 py-2 shadow-float border border-border/40 hover:scale-[1.02] transition"
+                  className="group flex items-center gap-3 rounded-full bg-card pl-4 pr-2 py-2 shadow-float border border-border/40 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(99,102,241,0.2)] transition-all duration-200"
                 >
                   <span className="text-sm font-medium text-foreground">Add expense</span>
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-dark text-white">
-                    <Plus className="h-6 w-6" />
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 group-hover:scale-110 transition-transform duration-200">
+                    <Plus className="h-6 w-6 text-white" />
                   </span>
                 </button>
               </motion.div>
@@ -180,9 +180,11 @@ export default function AppShell() {
             onClick={() => setFabMenuOpen((o) => !o)}
             aria-expanded={fabMenuOpen}
             aria-label={fabMenuOpen ? "Close quick actions" : "Open quick actions"}
-            className="h-14 w-14 rounded-full bg-surface-dark text-white shadow-float flex items-center justify-center hover:scale-105 transition"
+            className="group relative h-14 w-14 rounded-full bg-gradient-to-br from-surface-dark via-surface-dark to-zinc-800 text-white shadow-float flex items-center justify-center hover:scale-105 transition-all duration-300"
           >
-            {fabMenuOpen ? <X className="h-6 w-6" /> : <Plus className="h-6 w-6" />}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-violet-500/30 via-transparent to-cyan-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="absolute inset-0 rounded-full shadow-[0_0_20px_rgba(139,92,246,0.3)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <span className="relative z-10">{fabMenuOpen ? <X className="h-6 w-6" /> : <Plus className="h-6 w-6" />}</span>
           </button>
         </div>
 

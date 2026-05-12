@@ -17,8 +17,7 @@ import org.springframework.web.client.RestClient;
 @Component
 public class GeminiClient {
 
-    private static final String GEMINI_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={apiKey}";
+    private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={apiKey}";
 
     private final AppProperties appProperties;
     private final RestClient restClient;
@@ -81,15 +80,13 @@ public class GeminiClient {
         if (StringUtils.hasText(base64Data)) {
             parts.add(Map.of("inlineData", Map.of(
                     "mimeType", mimeType,
-                    "data", base64Data
-            )));
+                    "data", base64Data)));
         }
 
         Map<String, Object> body = Map.of(
-                "contents", new Object[]{
+                "contents", new Object[] {
                         Map.of("parts", parts)
-                }
-        );
+                });
 
         try {
             String url = GEMINI_URL.replace("{apiKey}", appProperties.ai().geminiApiKey().trim());
@@ -101,7 +98,8 @@ public class GeminiClient {
                     .body(String.class);
 
             JsonNode root = objectMapper.readTree(responseBody);
-            String text = root.path("candidates").path(0).path("content").path("parts").path(0).path("text").asText().trim();
+            String text = root.path("candidates").path(0).path("content").path("parts").path(0).path("text").asText()
+                    .trim();
             if (text.startsWith("```json")) {
                 text = text.substring(7);
             } else if (text.startsWith("```")) {
@@ -121,8 +119,7 @@ public class GeminiClient {
                     parsed.path("fat").asDouble(0),
                     parsed.path("estimatedCost").asDouble(0),
                     request.note(),
-                    "gemini"
-            );
+                    "gemini");
         } catch (Exception exception) {
             System.err.println("Gemini error: " + exception.getMessage());
             exception.printStackTrace();
@@ -136,12 +133,11 @@ public class GeminiClient {
         }
 
         Map<String, Object> body = Map.of(
-                "contents", new Object[]{
-                        Map.of("parts", new Object[]{
+                "contents", new Object[] {
+                        Map.of("parts", new Object[] {
                                 Map.of("text", prompt)
                         })
-                }
-        );
+                });
 
         try {
             String url = GEMINI_URL.replace("{apiKey}", appProperties.ai().geminiApiKey().trim());
@@ -153,7 +149,8 @@ public class GeminiClient {
                     .body(String.class);
 
             JsonNode root = objectMapper.readTree(responseBody);
-            String text = root.path("candidates").path(0).path("content").path("parts").path(0).path("text").asText().trim();
+            String text = root.path("candidates").path(0).path("content").path("parts").path(0).path("text").asText()
+                    .trim();
             if (text.startsWith("```json")) {
                 text = text.substring(7);
             } else if (text.startsWith("```")) {
@@ -171,10 +168,11 @@ public class GeminiClient {
 
     private FoodAnalysisResponse fallbackResponse(AnalyzeFoodRequest request, String source) {
         String normalized = (request.note() == null ? "" : request.note()).toLowerCase();
-        String foodName = source.startsWith("Error:") ? source : (normalized.contains("breakfast") ? "Breakfast Meal"
-                : normalized.contains("lunch") ? "Lunch Meal"
-                : normalized.contains("dinner") ? "Dinner Meal"
-                : "Logged Meal");
+        String foodName = source.startsWith("Error:") ? source
+                : (normalized.contains("breakfast") ? "Breakfast Meal"
+                        : normalized.contains("lunch") ? "Lunch Meal"
+                                : normalized.contains("dinner") ? "Dinner Meal"
+                                        : "Logged Meal");
 
         return new FoodAnalysisResponse(
                 request.imageUrl(),
@@ -185,7 +183,6 @@ public class GeminiClient {
                 18.0,
                 180.0,
                 request.note(),
-                source
-        );
+                source);
     }
 }
