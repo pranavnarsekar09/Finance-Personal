@@ -9,6 +9,8 @@ import { formatRupees } from "@/lib/utils";
 import { toast } from "sonner";
 import type { CalendarEntry, Expense } from "@/lib/types";
 
+import { ReceivedTab } from "@/components/finance/ReceivedTab";
+
 const categoryIcons: Record<string, any> = {
   Groceries: ShoppingBag,
   Dining: Utensils,
@@ -19,7 +21,7 @@ const categoryIcons: Record<string, any> = {
 };
 
 export default function Money() {
-  const [view, setView] = useState<"list" | "calendar">("list");
+  const [view, setView] = useState<"list" | "calendar" | "received">("list");
   const [direction, setDirection] = useState(0);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const { medium } = useHaptic();
@@ -38,22 +40,23 @@ export default function Money() {
     exit: (dir: number) => ({ x: dir > 0 ? -20 : 20, opacity: 0, transition: { duration: 0.18, ease: "easeIn" } }),
   };
 
-  const changeView = (nextView: "list" | "calendar") => {
-    setDirection(nextView === "calendar" ? 1 : -1);
+  const changeView = (nextView: "list" | "calendar" | "received") => {
+    const views = ["list", "calendar", "received"];
+    const currentIndex = views.indexOf(view);
+    const nextIndex = views.indexOf(nextView);
+    setDirection(nextIndex > currentIndex ? 1 : -1);
     setView(nextView);
     medium();
   };
 
   useSwipeNative({
     onSwipeLeft: () => {
-      if (view === "list") {
-        changeView("calendar");
-      }
+      if (view === "list") changeView("calendar");
+      else if (view === "calendar") changeView("received");
     },
     onSwipeRight: () => {
-      if (view === "calendar") {
-        changeView("list");
-      }
+      if (view === "calendar") changeView("list");
+      else if (view === "received") changeView("calendar");
     },
     threshold: 50,
     scopeSelector: "[data-money-swipe='true']",
@@ -90,14 +93,14 @@ export default function Money() {
     <div data-money-swipe="true" className="space-y-5 touch-pan-y">
       <div className="flex justify-between items-center">
         <div className="bg-card/70 backdrop-blur rounded-full p-1 flex shadow-soft">
-          {(["list", "calendar"] as const).map((t) => (
+          {(["list", "calendar", "received"] as const).map((t) => (
             <button key={t} onClick={() => changeView(t)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize transition ${view === t ? "bg-card shadow-soft text-primary" : "text-muted-foreground"}`}>
               {t}
             </button>
           ))}
         </div>
-        <div className="text-xs uppercase tracking-widest text-muted-foreground">{format(currentMonth, "MMMM yyyy")}</div>
+        <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-bold">{format(currentMonth, "MMMM yyyy")}</div>
       </div>
 
       <AnimatePresence mode="wait" custom={direction}>
@@ -127,7 +130,7 @@ export default function Money() {
               <div className="flex gap-2 overflow-x-auto -mx-5 px-5 pb-1 no-scrollbar">
                 {filters.map((f) => (
                   <button key={f} onClick={() => setFilter(f)}
-                    className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition ${filter === f ? "bg-surface-dark text-primary-foreground" : "bg-card text-muted-foreground shadow-soft"}`}>
+                    className={`px-4 py-2 rounded-full text-sm font-medium capitalize whitespace-nowrap transition ${filter === f ? "bg-surface-dark text-primary-foreground shadow-lg" : "bg-card text-muted-foreground shadow-soft"}`}>
                     {f}
                   </button>
                 ))}
@@ -154,7 +157,7 @@ export default function Money() {
                 )}
               </div>
             </>
-          ) : (
+          ) : view === "calendar" ? (
             <div className="space-y-6">
               <div className="flex items-center justify-between px-2">
                 <button onClick={handlePrevMonth} className="h-10 w-10 rounded-full bg-card shadow-soft flex items-center justify-center hover:bg-secondary transition">
@@ -167,6 +170,8 @@ export default function Money() {
               </div>
               <CalendarGrid monthStr={monthStr} currentMonth={currentMonth} />
             </div>
+          ) : (
+            <ReceivedTab />
           )}
         </motion.div>
       </AnimatePresence>

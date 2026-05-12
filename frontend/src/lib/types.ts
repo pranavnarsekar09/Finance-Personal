@@ -260,3 +260,23 @@ export interface CalendarEntry {
   expenses: Expense[];
   meals: FoodLog[];
 }
+
+export interface Income {
+  id: string;
+  userId: string;
+  amount: number;
+  source: string;
+  note: string | null;
+  date: string;
+  isRecurring: boolean;
+  createdAt: string;
+}
+
+export interface CreateIncomeRequest {
+  userId: string;
+  amount: number;
+  source: string;
+  note?: string;
+  date: string;
+  isRecurring: boolean;
+}

@@ -11,6 +11,7 @@ import type {
   UpdateCategoriesRequest,
   UpdateDailyFinanceRequest,
   UpdateGoalRequest,
+  CreateIncomeRequest,
 } from "@/lib/types";
 import { format, subMonths } from "date-fns";
 
@@ -417,6 +418,42 @@ export function useAddMoney(userId: string = DEFAULT_USER_ID) {
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["finance"] });
       invalidateAiCaches(queryClient, userId);
+    },
+  });
+}
+
+export function useIncomes(userId: string = DEFAULT_USER_ID, start?: string, end?: string) {
+  return useQuery({
+    queryKey: ["incomes", userId, start, end],
+    queryFn: () => api.getIncomes(userId, start, end),
+    staleTime: 1 * 60 * 1000,
+  });
+}
+
+export function useAddIncome() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateIncomeRequest) => api.addIncome(payload),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["finance"] });
+      queryClient.invalidateQueries({ queryKey: ["incomes", variables.userId] });
+      invalidateAiCaches(queryClient, variables.userId);
+    },
+  });
+}
+
+export function useDeleteIncome() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.deleteIncome(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["finance"] });
+      queryClient.invalidateQueries({ queryKey: ["incomes"] });
+      invalidateAiCaches(queryClient);
     },
   });
 }

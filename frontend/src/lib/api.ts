@@ -157,4 +157,15 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ amount }),
     }),
+  getIncomes: (userId: string, start?: string, end?: string) =>
+    request<IncomeResponse[]>(`/api/income?userId=${encodeURIComponent(userId)}${start ? `&start=${start}` : ""}${end ? `&end=${end}` : ""}`),
+  addIncome: (payload: CreateIncomeRequest) =>
+    request<IncomeResponse>("/api/income", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  deleteIncome: (id: string) =>
+    request<void>(`/api/income/${id}`, {
+      method: "DELETE",
+    }),
 };
