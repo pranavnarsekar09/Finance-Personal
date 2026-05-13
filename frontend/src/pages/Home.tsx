@@ -13,6 +13,7 @@ import { JarsRow } from "@/components/cards/JarsRow";
 import { SpendChart } from "@/components/charts/SpendChart";
 import { SpendingTrendChart } from "@/components/charts/SpendingTrendChart";
 import { CategoryPressure } from "@/components/cards/CategoryPressure";
+import { CoveringsCard } from "@/components/cards/CoveringsCard";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -398,6 +399,7 @@ function OverviewTab({
         latestExpense={dashboard?.recentTransactions?.[0] || null}
       />
       <InsightCard />
+      <CoveringsCard />
       <div className="grid grid-cols-2 gap-3">
         <StreakCard 
           streak={dashboard?.streak || 0} 

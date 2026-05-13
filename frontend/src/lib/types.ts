@@ -280,3 +280,31 @@ export interface CreateIncomeRequest {
   date: string;
   isRecurring: boolean;
 }
+
+export type CoveringFrequency = "monthly" | "semester" | "yearly";
+
+export interface CoveredExpense {
+  id: string;
+  name: string;
+  amount: number;
+  whoCovers: string;
+  frequency: CoveringFrequency;
+  nextDueDate: string;
+  createdAt: string;
+}
+
+export interface CreateCoveredExpenseRequest {
+  name: string;
+  amount: number;
+  whoCovers: string;
+  frequency: CoveringFrequency;
+  nextDueDate: string;
+}
+
+export interface UpdateCoveredExpenseRequest {
+  name?: string;
+  amount?: number;
+  whoCovers?: string;
+  frequency?: CoveringFrequency;
+  nextDueDate?: string;
+}

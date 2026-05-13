@@ -140,4 +140,11 @@ All colors MUST be HSL.
     background-image: radial-gradient(hsl(160 30% 20% / 0.04) 1px, transparent 1px);
     background-size: 3px 3px;
   }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }

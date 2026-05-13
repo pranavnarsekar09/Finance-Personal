@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import type { CalendarEntry, Expense } from "@/lib/types";
 
 import { ReceivedTab } from "@/components/finance/ReceivedTab";
+import { CoveringsTab } from "@/components/finance/CoveringsTab";
 
 const categoryIcons: Record<string, any> = {
   Groceries: ShoppingBag,
@@ -20,8 +21,10 @@ const categoryIcons: Record<string, any> = {
   default: ShoppingBag,
 };
 
+type MoneyView = "list" | "calendar" | "received" | "coverings";
+
 export default function Money() {
-  const [view, setView] = useState<"list" | "calendar" | "received">("list");
+  const [view, setView] = useState<MoneyView>("list");
   const [direction, setDirection] = useState(0);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const { medium } = useHaptic();
@@ -40,8 +43,8 @@ export default function Money() {
     exit: (dir: number) => ({ x: dir > 0 ? -20 : 20, opacity: 0, transition: { duration: 0.18, ease: "easeIn" } }),
   };
 
-  const changeView = (nextView: "list" | "calendar" | "received") => {
-    const views = ["list", "calendar", "received"];
+  const changeView = (nextView: MoneyView) => {
+    const views: MoneyView[] = ["list", "calendar", "received", "coverings"];
     const currentIndex = views.indexOf(view);
     const nextIndex = views.indexOf(nextView);
     setDirection(nextIndex > currentIndex ? 1 : -1);
@@ -53,10 +56,12 @@ export default function Money() {
     onSwipeLeft: () => {
       if (view === "list") changeView("calendar");
       else if (view === "calendar") changeView("received");
+      else if (view === "received") changeView("coverings");
     },
     onSwipeRight: () => {
       if (view === "calendar") changeView("list");
       else if (view === "received") changeView("calendar");
+      else if (view === "coverings") changeView("received");
     },
     threshold: 50,
     scopeSelector: "[data-money-swipe='true']",
@@ -92,15 +97,15 @@ export default function Money() {
   return (
     <div data-money-swipe="true" className="space-y-5 touch-pan-y">
       <div className="flex justify-between items-center">
-        <div className="bg-card/70 backdrop-blur rounded-full p-1 flex shadow-soft">
-          {(["list", "calendar", "received"] as const).map((t) => (
+        <div className="bg-card/70 backdrop-blur rounded-full p-1 flex shadow-soft overflow-x-auto no-scrollbar min-w-0">
+          {(["list", "calendar", "received", "coverings"] as const).map((t) => (
             <button key={t} onClick={() => changeView(t)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize transition ${view === t ? "bg-card shadow-soft text-primary" : "text-muted-foreground"}`}>
+              className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize transition whitespace-nowrap ${view === t ? "bg-card shadow-soft" : "text-muted-foreground"}`}>
               {t}
             </button>
           ))}
         </div>
-        <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-bold">{format(currentMonth, "MMMM yyyy")}</div>
+        <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-bold whitespace-nowrap shrink-0 ml-3">{format(currentMonth, "MMMM yyyy")}</div>
       </div>
 
       <AnimatePresence mode="wait" custom={direction}>
@@ -170,6 +175,8 @@ export default function Money() {
               </div>
               <CalendarGrid monthStr={monthStr} currentMonth={currentMonth} />
             </div>
+          ) : view === "coverings" ? (
+            <CoveringsTab />
           ) : (
             <ReceivedTab />
           )}
