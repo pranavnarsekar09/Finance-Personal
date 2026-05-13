@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient, useQueries } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { getCoveredExpenses, addCoveredExpense, updateCoveredExpense, deleteCoveredExpense } from "@/lib/utils";
 import { DEFAULT_USER_ID } from "@/lib/constants";
 import type {
   CreateGoalRequest,
@@ -490,26 +489,20 @@ export function useMultipleFoodLogs(userId: string = DEFAULT_USER_ID, months: st
   });
 }
 
-export function useCoveredExpenses() {
+export function useCoveredExpenses(userId: string = DEFAULT_USER_ID) {
   return useQuery({
-    queryKey: ["coveredExpenses"],
-    queryFn: () => Promise.resolve(getCoveredExpenses()),
-    staleTime: 0,
+    queryKey: ["coveredExpenses", userId],
+    queryFn: () => api.getCoveredExpenses(userId),
+    staleTime: 60 * 1000,
   });
 }
 
 export function useAddCoveredExpense() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: CreateCoveredExpenseRequest) => {
-      const result = addCoveredExpense(payload);
-      return Promise.resolve(result);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["coveredExpenses"] });
-    },
-    onError: (error) => {
-      console.error("useAddCoveredExpense error:", error);
+    mutationFn: (payload: CreateCoveredExpenseRequest) => api.addCoveredExpense(payload),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["coveredExpenses", variables.userId] });
     },
   });
 }
@@ -517,10 +510,8 @@ export function useAddCoveredExpense() {
 export function useUpdateCoveredExpense() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: UpdateCoveredExpenseRequest }) => {
-      const result = updateCoveredExpense(id, payload);
-      return Promise.resolve(result);
-    },
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateCoveredExpenseRequest }) => 
+      api.updateCoveredExpense(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["coveredExpenses"] });
     },
@@ -530,10 +521,7 @@ export function useUpdateCoveredExpense() {
 export function useDeleteCoveredExpense() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => {
-      const result = deleteCoveredExpense(id);
-      return Promise.resolve(result);
-    },
+    mutationFn: (id: string) => api.deleteCoveredExpense(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["coveredExpenses"] });
     },

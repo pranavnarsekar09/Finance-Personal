@@ -294,6 +294,7 @@ export interface CoveredExpense {
 }
 
 export interface CreateCoveredExpenseRequest {
+  userId: string;
   name: string;
   amount: number;
   whoCovers: string;

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useCoveredExpenses, useAddCoveredExpense, useUpdateCoveredExpense, useDeleteCoveredExpense } from "@/hooks/useApi";
 import { formatRupees, getDefaultCoveredExpenses, isCoveringsDashboardVisible, setCoveringsDashboardVisible } from "@/lib/utils";
+import { DEFAULT_USER_ID } from "@/lib/constants";
 import { format, parseISO, addMonths, isBefore, startOfMonth } from "date-fns";
 import { toast } from "sonner";
 import type { CoveredExpense, CoveringFrequency, CreateCoveredExpenseRequest } from "@/lib/types";
@@ -85,6 +86,7 @@ export function CoveringsTab() {
         toast.success("Expense updated");
       } else {
         await addExpense.mutateAsync({
+          userId: DEFAULT_USER_ID,
           name: formData.name,
           amount,
           whoCovers: formData.whoCovers,

@@ -20,6 +20,9 @@ import type {
   UpdateCategoriesRequest,
   UpdateDailyFinanceRequest,
   UpdateGoalRequest,
+  CoveredExpense,
+  CreateCoveredExpenseRequest,
+  UpdateCoveredExpenseRequest,
 } from "./types";
 
 type RequestOptions = RequestInit & {
@@ -166,6 +169,22 @@ export const api = {
     }),
   deleteIncome: (id: string) =>
     request<void>(`/api/income/${id}`, {
+      method: "DELETE",
+    }),
+  getCoveredExpenses: (userId: string) =>
+    request<CoveredExpense[]>(`/api/covered-expenses?userId=${encodeURIComponent(userId)}`),
+  addCoveredExpense: (payload: CreateCoveredExpenseRequest) =>
+    request<CoveredExpense>("/api/covered-expenses", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  updateCoveredExpense: (id: string, payload: UpdateCoveredExpenseRequest) =>
+    request<CoveredExpense>(`/api/covered-expenses/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  deleteCoveredExpense: (id: string) =>
+    request<void>(`/api/covered-expenses/${id}`, {
       method: "DELETE",
     }),
 };
