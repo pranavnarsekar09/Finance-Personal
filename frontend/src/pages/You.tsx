@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Plus, Sun, Moon, AlertCircle, Edit2, Trash2, Download, FileText, FileSpreadsheet, Settings, FolderOpen, User as UserIcon } from "lucide-react";
+import { Check, Plus, Sun, Moon, AlertCircle, Edit2, Trash2, Download, FileText, FileSpreadsheet, Settings, FolderOpen, User as UserIcon, Target } from "lucide-react";
 import { toast } from "sonner";
-import { useGoals, useProfile, useSaveProfile, useSaveCategories, useMultipleExpenses, useMultipleFoodLogs, useFinance, useDashboard, useStorageUsage } from "@/hooks/useApi";
+import { useGoals, useProfile, useSaveProfile, useSaveCategories, useMultipleExpenses, useMultipleFoodLogs, useFinance, useDashboard, useStorageUsage, useAddGoal, useUpdateGoal, useDeleteGoal } from "@/hooks/useApi";
+import { useSwipeNative } from "@/hooks/useSwipe";
 import { useHaptic } from "@/hooks/useHaptic";
 import { formatRupees, cn } from "@/lib/utils";
-import type { UserCategory, Goal } from "@/lib/types";
+import type { UserCategory, Goal, GoalType } from "@/lib/types";
 import { format, subMonths } from "date-fns";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -20,6 +21,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SubtabPillBarWithIndicator } from "@/components/layout/SubtabPillBar";
 
 const YOU_TABS = ["profile", "categories", "preferences", "data"] as const;
@@ -44,8 +52,26 @@ export default function You() {
     medium();
   };
 
+  useSwipeNative({
+    onSwipeLeft: () => {
+      const currentIndex = YOU_TABS.indexOf(tab);
+      if (currentIndex < YOU_TABS.length - 1) {
+        changeTab(YOU_TABS[currentIndex + 1]);
+      }
+    },
+    onSwipeRight: () => {
+      const currentIndex = YOU_TABS.indexOf(tab);
+      if (currentIndex > 0) {
+        changeTab(YOU_TABS[currentIndex - 1]);
+      }
+    },
+    threshold: 50,
+    ignoreSelector: "[data-swipe-ignore]",
+    scopeSelector: "[data-you-swipe='true']",
+  });
+
   return (
-    <div className="space-y-5">
+    <div data-you-swipe="true" className="space-y-5 touch-pan-y">
       <div className="flex justify-between items-center">
         <SubtabPillBarWithIndicator
           tabs={YOU_TABS}
@@ -77,12 +103,52 @@ export default function You() {
 function ProfileTabContent() {
   const { data: profile, isLoading: profileLoading, error: profileError } = useProfile();
   const { data: goals, isLoading: goalsLoading } = useGoals();
+  const month = format(new Date(), "yyyy-MM");
+  const dashboardQuery = useDashboard(undefined, month, undefined, true);
   const saveProfile = useSaveProfile();
+  const addGoal = useAddGoal();
+  const updateGoal = useUpdateGoal();
+  const deleteGoal = useDeleteGoal();
+  const { medium } = useHaptic();
   const [isEditing, setIsEditing] = useState(false);
   const [nameInput, setNameInput] = useState("");
   const [emailInput, setEmailInput] = useState("");
   const [budgetInput, setBudgetInput] = useState("");
   const [calorieInput, setCalorieInput] = useState("");
+  const [balanceInput, setBalanceInput] = useState("");
+
+  const totalSpent = dashboardQuery.data?.totalSpent || 0;
+
+  useEffect(() => {
+    if (profile) {
+      setBudgetInput(profile.monthlyBudget?.toString() || "");
+      setCalorieInput(profile.calorieGoal?.toString() || "");
+      const balance = (profile.monthlyBudget || 0) - totalSpent;
+      setBalanceInput(balance.toString());
+    }
+  }, [profile, totalSpent]);
+
+  const handleBudgetInputChange = (val: string) => {
+    setBudgetInput(val);
+    const num = Number(val);
+    if (!isNaN(num)) {
+      setBalanceInput((num - totalSpent).toString());
+    }
+  };
+
+  const handleBalanceInputChange = (val: string) => {
+    setBalanceInput(val);
+    const num = Number(val);
+    if (!isNaN(num)) {
+      setBudgetInput((num + totalSpent).toString());
+    }
+  };
+
+  const [goalType, setGoalType] = useState<GoalType>("SAVINGS");
+  const [goalTarget, setGoalTarget] = useState("");
+  const [goalCurrent, setGoalCurrent] = useState("0");
+  const [goalDeadline, setGoalDeadline] = useState(format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), "yyyy-MM-dd"));
+  const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
 
   if (profileLoading || goalsLoading) {
     return <div className="p-10 text-center animate-pulse">Loading profile...</div>;
@@ -139,19 +205,97 @@ function ProfileTabContent() {
   };
 
   const handleSaveProfile = async () => {
+    const budget = Number(budgetInput);
+    const calories = Number(calorieInput);
+
+    if (isNaN(budget) || budget <= 0) {
+      toast.error("Monthly budget must be greater than 0");
+      return;
+    }
+    if (isNaN(calories) || calories <= 0) {
+      toast.error("Calorie goal must be greater than 0");
+      return;
+    }
+
     try {
       await saveProfile.mutateAsync({
-        name: nameInput,
-        email: emailInput,
-        monthlyBudget: Number(budgetInput),
-        calorieGoal: Number(calorieInput),
-        availableBalance: profile.availableBalance,
+        name: profile.name,
+        email: profile.email,
+        monthlyBudget: budget,
+        calorieGoal: calories,
+        availableBalance: Number(balanceInput),
         categories: profile.categories,
       });
       toast.success("Profile updated!");
       setIsEditing(false);
     } catch (err: any) {
       toast.error(err.message);
+    }
+  };
+
+  const handleAddGoal = async () => {
+    const targetAmount = Number(goalTarget);
+    const currentAmount = Number(goalCurrent);
+
+    if (targetAmount <= 0) {
+      toast.error("Goal target must be greater than 0.");
+      return;
+    }
+
+    if (!goalDeadline) {
+      toast.error("Please choose a future deadline.");
+      return;
+    }
+
+    try {
+      if (editingGoalId) {
+        await updateGoal.mutateAsync({
+          id: editingGoalId,
+          payload: {
+            type: goalType,
+            targetAmount,
+            currentAmount: currentAmount >= 0 ? currentAmount : 0,
+            deadline: goalDeadline,
+          },
+        });
+        toast.success("Goal updated.");
+      } else {
+        const payload = {
+          userId: profile?.userId || "demo-user",
+          type: goalType,
+          targetAmount,
+          currentAmount: currentAmount >= 0 ? currentAmount : 0,
+          deadline: goalDeadline,
+        };
+        await addGoal.mutateAsync(payload);
+        toast.success("Goal added.");
+      }
+
+      setGoalTarget("");
+      setGoalCurrent("0");
+      setGoalDeadline(format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), "yyyy-MM-dd"));
+      setEditingGoalId(null);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to process goal.");
+    }
+  };
+
+  const startEditingGoal = (goal: Goal) => {
+    setEditingGoalId(goal.id);
+    setGoalType(goal.type);
+    setGoalTarget(goal.targetAmount.toString());
+    setGoalCurrent(goal.currentAmount.toString());
+    setGoalDeadline(format(new Date(goal.deadline), "yyyy-MM-dd"));
+    medium();
+  };
+
+  const handleDeleteGoal = async (goalId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await deleteGoal.mutateAsync(goalId);
+      toast.success("Goal deleted.");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete goal.");
     }
   };
 
@@ -230,6 +374,153 @@ function ProfileTabContent() {
           </div>
         </div>
       )}
+
+      <div className="bg-card rounded-[1.75rem] shadow-soft p-5 space-y-5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Monthly Budget</div>
+            <Input
+              type="number"
+              min="1"
+              value={budgetInput}
+              onChange={(e) => handleBudgetInputChange(e.target.value)}
+              placeholder="Enter monthly budget"
+              className="rounded-2xl h-12"
+            />
+          </div>
+          <div>
+            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Available Balance</div>
+            <Input
+              type="number"
+              value={balanceInput}
+              onChange={(e) => handleBalanceInputChange(e.target.value)}
+              placeholder="Available balance"
+              className="rounded-2xl h-12"
+            />
+          </div>
+          <div>
+            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Calorie Goal</div>
+            <Input
+              type="number"
+              min="1"
+              value={calorieInput}
+              onChange={(e) => setCalorieInput(e.target.value)}
+              placeholder="Enter calorie goal"
+              className="rounded-2xl h-12"
+            />
+          </div>
+        </div>
+
+        <button
+          onClick={handleSaveProfile}
+          disabled={saveProfile.isPending}
+          className="w-full rounded-full bg-surface-dark text-primary-foreground py-3.5 font-medium disabled:opacity-50"
+        >
+          {saveProfile.isPending ? "Saving..." : "Save Budget Settings"}
+        </button>
+      </div>
+
+      <div className="bg-card rounded-[1.75rem] shadow-soft p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <Target className="h-4 w-4 text-primary" />
+          <div className="text-xs uppercase tracking-widest text-muted-foreground">Add Goal</div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Goal Type</div>
+            <Select value={goalType} onValueChange={(value: GoalType) => setGoalType(value)}>
+              <SelectTrigger className="rounded-2xl h-12">
+                <SelectValue placeholder="Select goal type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="SAVINGS">Savings</SelectItem>
+                <SelectItem value="CALORIE">Calorie</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Target</div>
+            <Input
+              type="number"
+              min="1"
+              value={goalTarget}
+              onChange={(e) => setGoalTarget(e.target.value)}
+              placeholder="Target amount"
+              className="rounded-2xl h-12"
+            />
+          </div>
+          <div>
+            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Current</div>
+            <Input
+              type="number"
+              min="0"
+              value={goalCurrent}
+              onChange={(e) => setGoalCurrent(e.target.value)}
+              placeholder="Current progress"
+              className="rounded-2xl h-12"
+            />
+          </div>
+          <div>
+            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Deadline</div>
+            <Input
+              type="date"
+              value={goalDeadline}
+              onChange={(e) => setGoalDeadline(e.target.value)}
+              className="rounded-2xl h-12"
+            />
+          </div>
+        </div>
+
+        <button
+          onClick={handleAddGoal}
+          disabled={addGoal.isPending || updateGoal.isPending}
+          className="w-full rounded-full bg-secondary py-3.5 font-medium disabled:opacity-50"
+        >
+          {editingGoalId ? (updateGoal.isPending ? "Updating Goal..." : "Update Goal") : (addGoal.isPending ? "Adding Goal..." : "Add Goal")}
+        </button>
+
+        {goals && goals.length > 0 && (
+          <div className="space-y-3 pt-2">
+            <div className="text-xs uppercase tracking-widest text-muted-foreground">Current Goals</div>
+            {goals.map((goal: Goal) => (
+              <div
+                key={goal.id}
+                className={cn(
+                  "rounded-2xl p-4 transition-all cursor-pointer active:scale-95",
+                  editingGoalId === goal.id ? "bg-primary text-primary-foreground shadow-float" : "bg-secondary/60 hover:bg-secondary/80"
+                )}
+                onClick={() => startEditingGoal(goal)}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="font-semibold capitalize">{goal.type.toLowerCase()} goal</div>
+                    <div className="text-xs opacity-70">Deadline: {format(new Date(goal.deadline), "d MMM yyyy")}</div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <div className="font-display text-lg font-bold">{goal.type === "CALORIE" ? `${goal.targetAmount} kcal` : formatRupees(goal.targetAmount)}</div>
+                      <div className="text-xs opacity-70">{Math.round(goal.progress)}% complete</div>
+                    </div>
+                    <button
+                      onClick={(e) => handleDeleteGoal(goal.id, e)}
+                      disabled={deleteGoal.isPending}
+                      className={cn(
+                        "p-2 rounded-full transition-colors",
+                        editingGoalId === goal.id
+                          ? "hover:bg-white/20 text-primary-foreground"
+                          : "hover:bg-destructive/20 text-destructive"
+                      )}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <Dialog open={isEditing} onOpenChange={setIsEditing}>
         <DialogContent className="rounded-[1.75rem] max-w-[90vw] sm:max-w-[425px]">

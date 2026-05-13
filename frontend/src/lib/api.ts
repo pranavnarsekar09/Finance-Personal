@@ -128,6 +128,10 @@ export const api = {
       method: "PUT",
       body: JSON.stringify(payload),
     }),
+  deleteGoal: (id: string) =>
+    request<void>(`/api/goals/${id}`, {
+      method: "DELETE",
+    }),
   getInsight: (userId: string) => request<Insight>(`/api/ai/insight?userId=${encodeURIComponent(userId)}`),
   getAiDashboard: (userId: string) => request<AiDashboard>(`/api/ai/dashboard?userId=${encodeURIComponent(userId)}`),
   chat: (userId: string, message: string) =>

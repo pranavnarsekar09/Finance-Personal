@@ -2,8 +2,8 @@ import { useState, useMemo, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { AlertCircle, PiggyBank, RefreshCw, Target as TargetIcon, Wallet, Sparkles, Brain, ShieldAlert, TrendingDown, TrendingUp, Minus, Target } from "lucide-react";
-import { useAddGoal, useDashboard, useExpenseTrend, useFinance, useGoals, useProfile, useSaveFinance, useSaveProfile, useUpdateGoal, useAiDashboard, useCoveredExpenses } from "@/hooks/useApi";
+import { AlertCircle, PiggyBank, RefreshCw, Target as TargetIcon, Wallet, Sparkles, Brain, ShieldAlert, TrendingDown, TrendingUp, Minus, Target, Trash2 } from "lucide-react";
+import { useAddGoal, useDashboard, useDeleteGoal, useExpenseTrend, useFinance, useGoals, useProfile, useSaveFinance, useSaveProfile, useUpdateGoal, useAiDashboard, useCoveredExpenses } from "@/hooks/useApi";
 import { useSwipeNative } from "@/hooks/useSwipe";
 import { useHaptic } from "@/hooks/useHaptic";
 import { SubtabPillBarWithIndicator } from "@/components/layout/SubtabPillBar";
@@ -581,6 +581,7 @@ function BudgetTabContent({
   const saveProfile = useSaveProfile();
   const addGoal = useAddGoal();
   const updateGoal = useUpdateGoal();
+  const deleteGoal = useDeleteGoal();
   const { medium } = useHaptic();
   const [budgetInput, setBudgetInput] = useState(profile?.monthlyBudget?.toString() || "");
   const [calorieInput, setCalorieInput] = useState(profile?.calorieGoal?.toString() || "");
@@ -701,148 +702,23 @@ function BudgetTabContent({
     medium();
   };
 
+  const handleDeleteGoal = async (goalId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await deleteGoal.mutateAsync(goalId);
+      toast.success("Goal deleted.");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete goal.");
+    }
+  };
+
   return (
     <div className="space-y-5">
       {profileError ? <QueryErrorCard title="Profile settings unavailable" message={profileError} /> : null}
       {goalsError ? <QueryErrorCard title="Goals are delayed" message={goalsError} /> : null}
       {profileLoading && !profile ? <QueryLoadingCard label="Loading budget settings..." /> : null}
 
-      <div className="bg-card rounded-[1.75rem] shadow-soft p-5 space-y-5">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Monthly Budget</div>
-            <Input
-              type="number"
-              min="1"
-              value={budgetInput}
-              onChange={(e) => handleBudgetInputChange(e.target.value)}
-              placeholder="Enter monthly budget"
-              className="rounded-2xl h-12"
-            />
-          </div>
-          <div>
-            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Available Balance</div>
-            <Input
-              type="number"
-              value={balanceInput}
-              onChange={(e) => handleBalanceInputChange(e.target.value)}
-              placeholder="Enter available balance"
-              className="rounded-2xl h-12"
-            />
-          </div>
-          <div>
-            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Calorie Goal</div>
-            <Input
-              type="number"
-              min="1"
-              value={calorieInput}
-              onChange={(e) => setCalorieInput(e.target.value)}
-              placeholder="Enter calorie goal"
-              className="rounded-2xl h-12"
-            />
-          </div>
-        </div>
-
-        <button
-          onClick={handleBudgetSave}
-          disabled={saveProfile.isPending}
-          className="w-full rounded-full bg-surface-dark text-primary-foreground py-3.5 font-medium disabled:opacity-50"
-        >
-          {saveProfile.isPending ? "Saving..." : "Save Budget Settings"}
-        </button>
       </div>
-
-      <div className="bg-card rounded-[1.75rem] shadow-soft p-5 space-y-4">
-        <div className="flex items-center gap-2">
-          <Target className="h-4 w-4 text-primary" />
-          <div className="text-xs uppercase tracking-widest text-muted-foreground">Add Goal</div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Goal Type</div>
-            <Select value={goalType} onValueChange={(value: GoalType) => setGoalType(value)}>
-              <SelectTrigger className="rounded-2xl h-12">
-                <SelectValue placeholder="Select goal type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="SAVINGS">Savings</SelectItem>
-                <SelectItem value="CALORIE">Calorie</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Target</div>
-            <Input
-              type="number"
-              min="1"
-              value={goalTarget}
-              onChange={(e) => setGoalTarget(e.target.value)}
-              placeholder="Target amount"
-              className="rounded-2xl h-12"
-            />
-          </div>
-          <div>
-            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Current</div>
-            <Input
-              type="number"
-              min="0"
-              value={goalCurrent}
-              onChange={(e) => setGoalCurrent(e.target.value)}
-              placeholder="Current progress"
-              className="rounded-2xl h-12"
-            />
-          </div>
-          <div>
-            <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Deadline</div>
-            <Input
-              type="date"
-              value={goalDeadline}
-              onChange={(e) => setGoalDeadline(e.target.value)}
-              className="rounded-2xl h-12"
-            />
-          </div>
-        </div>
-
-        <button
-          onClick={handleAddGoal}
-          disabled={addGoal.isPending || updateGoal.isPending}
-          className="w-full rounded-full bg-secondary py-3.5 font-medium disabled:opacity-50"
-        >
-          {editingGoalId ? (updateGoal.isPending ? "Updating Goal..." : "Update Goal") : (addGoal.isPending ? "Adding Goal..." : "Add Goal")}
-        </button>
-
-        {goals.length > 0 && (
-          <div className="space-y-3 pt-2">
-            <div className="text-xs uppercase tracking-widest text-muted-foreground">Current Goals</div>
-            {goals.map((goal) => (
-              <div 
-                key={goal.id} 
-                className={cn(
-                  "rounded-2xl p-4 transition-all cursor-pointer active:scale-95",
-                  editingGoalId === goal.id ? "bg-primary text-primary-foreground shadow-float" : "bg-secondary/60 hover:bg-secondary/80"
-                )}
-                onClick={() => startEditingGoal(goal)}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="font-semibold capitalize">{goal.type.toLowerCase()} goal</div>
-                    <div className="text-xs opacity-70">Deadline: {format(new Date(goal.deadline), "d MMM yyyy")}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-display text-lg font-bold">{formatRupees(goal.targetAmount)}</div>
-                    <div className="text-xs opacity-70">{Math.round(goal.progress)}% complete</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        {goalsLoading && goals.length === 0 && (
-          <div className="rounded-2xl bg-secondary/50 p-4 text-sm text-muted-foreground">Loading your goals...</div>
-        )}
-      </div>
-    </div>
   );
 }
 

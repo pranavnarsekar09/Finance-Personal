@@ -47,6 +47,12 @@ public class GoalService {
                 .toList();
     }
 
+    public void deleteGoal(String id) {
+        Goal goal = goalRepository.findById(id)
+                .orElseThrow(() -> new com.personalproject.tracker.common.ResourceNotFoundException("Goal not found"));
+        goalRepository.delete(goal);
+    }
+
     private String requireUserId(String userId) {
         if (!StringUtils.hasText(userId)) {
             throw new IllegalArgumentException("userId is required");

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient, useQueries } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { DEFAULT_USER_ID } from "@/lib/constants";
 import type {
@@ -335,6 +336,33 @@ export function useUpdateGoal() {
       queryClient.invalidateQueries({ queryKey: ["goals"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       invalidateAiCaches(queryClient);
+    },
+  });
+}
+
+export function useDeleteGoal(userId: string = DEFAULT_USER_ID) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const result = await api.deleteGoal(id);
+      return result;
+    },
+    onMutate: async (goalId: string) => {
+      await queryClient.cancelQueries({ queryKey: ["goals", userId] });
+      const previousGoals = queryClient.getQueryData(["goals", userId]);
+      queryClient.setQueryData(["goals", userId], (old: unknown) => {
+        if (!old || !Array.isArray(old)) return old;
+        return old.filter((g: { id: string }) => g.id !== goalId);
+      });
+      return { previousGoals };
+    },
+    onError: (_err, _goalId, context) => {
+      queryClient.setQueryData(["goals", userId], context?.previousGoals);
+      toast.error("Failed to delete goal. Backend may be missing DELETE endpoint.");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["goals", userId] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
     },
   });
 }
