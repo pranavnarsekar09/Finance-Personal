@@ -180,9 +180,6 @@ export function CoveringsTab() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24">
-      <h1 className="font-display text-4xl font-bold tracking-tight">Covered Expenses</h1>
-      <p className="text-sm text-muted-foreground mt-1 mb-6">Expenses your parents cover for you</p>
-
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">

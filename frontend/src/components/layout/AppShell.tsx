@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Wallet, Apple, User, Plus, Sparkles, BrainCircuit, X, Banknote } from "lucide-react";
+import { LayoutDashboard, Wallet, Apple, User, Plus, Sparkles, X, Banknote } from "lucide-react";
 import { cn } from "@/lib/utils";
-import HomePage from "@/pages/Home";
+import DashboardPage from "@/pages/Dashboard";
 import MoneyPage from "@/pages/Money";
 import HealthPage from "@/pages/Health";
-import AIPage from "@/pages/AI";
 import YouPage from "@/pages/You";
 import { ChatSheet } from "@/components/sheets/ChatSheet";
 import { AddExpenseSheet } from "@/components/sheets/AddExpenseSheet";
@@ -16,10 +15,9 @@ import { AddMoneySheet } from "@/components/sheets/AddMoneySheet";
 import { SheetContext } from "@/context/SheetContext";
 
 const tabs = [
-  { id: "home", label: "Home", icon: Home, Comp: HomePage },
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, Comp: DashboardPage },
   { id: "money", label: "Money", icon: Wallet, Comp: MoneyPage },
   { id: "health", label: "Health", icon: Apple, Comp: HealthPage },
-  { id: "ai", label: "Ai", icon: BrainCircuit, Comp: AIPage },
   { id: "you", label: "You", icon: User, Comp: YouPage },
 ] as const;
 
@@ -35,8 +33,8 @@ export default function AppShell() {
   const modalHistoryPushed = useRef(false);
 
   const active = useMemo(() => {
-    const path = location.pathname.replace(/^\//, "") || "home";
-    return tabs.some((t) => t.id === path) ? (path as (typeof tabs)[number]["id"]) : "home";
+    const path = location.pathname.replace(/^\//, "") || "dashboard";
+    return tabs.some((t) => t.id === path) ? (path as (typeof tabs)[number]["id"]) : "dashboard";
   }, [location.pathname]);
 
   const activeSheet = chatOpen ? "chat" : addOpen ? "add" : mealOpen ? "meal" : analyzeOpen ? "analyze" : addMoneyOpen ? "addMoney" : null;
@@ -197,7 +195,7 @@ export default function AppShell() {
               return (
                 <button
                   key={t.id}
-                  onClick={() => navigate(t.id === "home" ? "/" : `/${t.id}`)}
+                  onClick={() => navigate(`/${t.id}`)}
                   className={cn(
                     "relative flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200",
                     on ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"

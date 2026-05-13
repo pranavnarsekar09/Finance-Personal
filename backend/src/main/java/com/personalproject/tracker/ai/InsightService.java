@@ -8,6 +8,8 @@ import com.personalproject.tracker.ai.dto.AiPrediction;
 import com.personalproject.tracker.ai.dto.AiRecommendation;
 import com.personalproject.tracker.ai.dto.AiScore;
 import com.personalproject.tracker.ai.dto.InsightResponse;
+import com.personalproject.tracker.coveredexpense.CoveredExpense;
+import com.personalproject.tracker.coveredexpense.CoveredExpenseRepository;
 import com.personalproject.tracker.expense.Expense;
 import com.personalproject.tracker.expense.ExpenseRepository;
 import com.personalproject.tracker.finance.UserFinanceRepository;
@@ -39,6 +41,7 @@ public class InsightService {
     private final FoodLogRepository foodLogRepository;
     private final GoalRepository goalRepository;
     private final UserFinanceRepository userFinanceRepository;
+    private final CoveredExpenseRepository coveredExpenseRepository;
     private final GeminiClient geminiClient;
     private final ObjectMapper objectMapper;
 
@@ -54,6 +57,7 @@ public class InsightService {
             FoodLogRepository foodLogRepository,
             GoalRepository goalRepository,
             UserFinanceRepository userFinanceRepository,
+            CoveredExpenseRepository coveredExpenseRepository,
             GeminiClient geminiClient,
             ObjectMapper objectMapper
     ) {
@@ -62,6 +66,7 @@ public class InsightService {
         this.foodLogRepository = foodLogRepository;
         this.goalRepository = goalRepository;
         this.userFinanceRepository = userFinanceRepository;
+        this.coveredExpenseRepository = coveredExpenseRepository;
         this.geminiClient = geminiClient;
         this.objectMapper = objectMapper;
     }
@@ -181,6 +186,32 @@ public class InsightService {
         List<FoodLog> rollingFoods = foodLogRepository.findByUserIdAndDateGreaterThanEqualAndDateLessThan(userId, windowStart, nextMonthStart);
         List<Goal> goals = goalRepository.findByUserIdOrderByCreatedAtDesc(userId);
         var finance = userFinanceRepository.findByUserId(userId).orElse(null);
+        List<CoveredExpense> coveredExpenses = coveredExpenseRepository.findByUserId(userId);
+
+        double monthlyCovered = coveredExpenses.stream()
+                .filter(e -> "monthly".equalsIgnoreCase(e.getFrequency()))
+                .mapToDouble(e -> safe(e.getAmount()))
+                .sum();
+        double semesterCovered = coveredExpenses.stream()
+                .filter(e -> "semester".equalsIgnoreCase(e.getFrequency()))
+                .mapToDouble(e -> safe(e.getAmount()))
+                .sum();
+        double yearlyCovered = coveredExpenses.stream()
+                .filter(e -> "yearly".equalsIgnoreCase(e.getFrequency()))
+                .mapToDouble(e -> safe(e.getAmount()))
+                .sum();
+
+        String coveredExpensesText = coveredExpenses.isEmpty()
+                ? "No expenses are currently marked as covered by others."
+                : String.format(
+                        "Expenses covered by others: %s. Total covered monthly: Rs %.0f, Semester: Rs %.0f, Yearly: Rs %.0f.",
+                        coveredExpenses.stream()
+                                .map(e -> String.format("%s (Rs %.0f by %s)", e.getName(), safe(e.getAmount()), e.getWhoCovers()))
+                                .collect(Collectors.joining("; ")),
+                        monthlyCovered, semesterCovered, yearlyCovered
+                );
+
+        double totalCoveredEquivalentMonthly = monthlyCovered + (semesterCovered / 6.0) + (yearlyCovered / 12.0);
 
         double monthlyBudget = safe(profile.getMonthlyBudget());
         double totalSpent = monthlyExpenses.stream().mapToDouble(expense -> safe(expense.getAmount())).sum();
@@ -326,7 +357,9 @@ public class InsightService {
                 entertainmentSpike,
                 categoryAverages.getOrDefault(entertainmentSpikeCategory, 0.0),
                 finance != null ? finance.getLastProcessedDate() : null,
-                today
+                today,
+                coveredExpensesText,
+                totalCoveredEquivalentMonthly
         );
 
         try {
@@ -377,7 +410,9 @@ public class InsightService {
             double spikeAmount,
             double spikeAverage,
             LocalDate lastIncomeDate,
-            LocalDate today
+            LocalDate today,
+            String coveredExpensesText,
+            double totalCoveredEquivalentMonthly
     ) {
         String savingsText = savingsGoal == null
                 ? "No active savings goal."
@@ -410,6 +445,8 @@ public class InsightService {
                 Consistency score: %d
                 Largest category spike: %s at %.2f versus average %.2f
                 Most recent processed income/buffer date: %s
+                %s
+                Equivalent monthly value covered by others: Rs %.2f
                 Today: %s
 
                 Return ONLY valid JSON with keys:
@@ -444,6 +481,8 @@ public class InsightService {
                 spikeAmount,
                 spikeAverage,
                 lastIncomeDate != null ? lastIncomeDate : "none",
+                coveredExpensesText,
+                totalCoveredEquivalentMonthly,
                 today
         );
     }
