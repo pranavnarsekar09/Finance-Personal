@@ -3,17 +3,8 @@ import { toast } from "sonner";
 import { Plus, Minus, Info, Calendar, RefreshCw } from "lucide-react";
 import { BottomSheet } from "./BottomSheet";
 import { useAddIncome, useProfile } from "@/hooks/useApi";
-import { formatRupees } from "@/lib/utils";
+import { formatRupees, getIncomeSources } from "@/lib/utils";
 import { DEFAULT_USER_ID } from "@/lib/constants";
-
-const DEFAULT_SOURCES = [
-  "Pocket Money",
-  "Dad",
-  "Mom",
-  "Sold Something",
-  "Cashback",
-  "Other"
-];
 
 export function AddMoneySheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { data: profile } = useProfile();
@@ -109,7 +100,7 @@ export function AddMoneySheet({ open, onClose }: { open: boolean; onClose: () =>
         <div className="mt-6">
           <div className="text-xs uppercase tracking-widest text-muted-foreground mb-3 px-1 font-bold">Source</div>
           <div className="flex overflow-x-auto pb-2 gap-2 no-scrollbar">
-            {DEFAULT_SOURCES.map((s) => (
+            {getIncomeSources().map((s) => (
               <button
                 key={s}
                 onClick={() => setSource(s)}

@@ -8,10 +8,13 @@ import {
   ChevronRight, 
   Banknote,
   Clock,
-  LayoutGrid
+  LayoutGrid,
+  Plus,
+  X,
+  Settings
 } from "lucide-react";
 import { useIncomes, useDeleteIncome } from "@/hooks/useApi";
-import { formatRupees } from "@/lib/utils";
+import { formatRupees, getIncomeSources, addIncomeSource, removeIncomeSource } from "@/lib/utils";
 import { format, parseISO, startOfWeek, startOfMonth, subMonths, isAfter } from "date-fns";
 import { toast } from "sonner";
 import { Income } from "@/lib/types";
@@ -20,8 +23,27 @@ type FilterType = "week" | "month" | "3months" | "all";
 
 export function ReceivedTab() {
   const [filter, setFilter] = useState<FilterType>("month");
+  const [showSources, setShowSources] = useState(false);
+  const [newSource, setNewSource] = useState("");
+  const [sources, setSources] = useState<string[]>(getIncomeSources);
   const { data: incomes = [], isLoading } = useIncomes();
   const deleteIncome = useDeleteIncome();
+
+  const handleAddSource = () => {
+    if (!newSource.trim()) return;
+    const updated = addIncomeSource(newSource.trim());
+    setSources(updated);
+    setNewSource("");
+    toast.success("Source added");
+  };
+
+  const handleRemoveSource = (source: string) => {
+    if (window.confirm(`Remove "${source}" from sources?`)) {
+      const updated = removeIncomeSource(source);
+      setSources(updated);
+      toast.success("Source removed");
+    }
+  };
 
   const filteredIncomes = useMemo(() => {
     const now = new Date();
@@ -115,10 +137,55 @@ export function ReceivedTab() {
 
       {/* Source Breakdown */}
       <div className="mb-8">
-        <div className="flex items-center gap-2 mb-4 px-1">
-          <LayoutGrid className="h-4 w-4 text-primary" />
-          <h3 className="text-xs uppercase tracking-widest font-bold text-muted-foreground">Source Breakdown</h3>
+        <div className="flex items-center justify-between mb-4 px-1">
+          <div className="flex items-center gap-2">
+            <LayoutGrid className="h-4 w-4 text-primary" />
+            <h3 className="text-xs uppercase tracking-widest font-bold text-muted-foreground">Source Breakdown</h3>
+          </div>
+          <button
+            onClick={() => setShowSources(!showSources)}
+            className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-bold text-primary hover:underline"
+          >
+            <Settings className="h-3.5 w-3.5" />
+            Manage
+          </button>
         </div>
+
+        {showSources && (
+          <div className="bg-secondary/30 rounded-2xl p-4 mb-4 border border-dashed border-muted-foreground/20">
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3 font-bold">Income Sources</div>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {sources.map((source) => (
+                <div key={source} className="flex items-center gap-1 bg-card px-3 py-1.5 rounded-full text-xs font-medium border shadow-sm">
+                  <span>{source}</span>
+                  <button
+                    onClick={() => handleRemoveSource(source)}
+                    className="h-4 w-4 rounded-full bg-coral/10 text-coral hover:bg-coral hover:text-white flex items-center justify-center transition-all"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                value={newSource}
+                onChange={(e) => setNewSource(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddSource()}
+                placeholder="Add new source..."
+                className="flex-1 bg-card border border-muted-foreground/10 rounded-xl px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/20"
+              />
+              <button
+                onClick={handleAddSource}
+                disabled={!newSource.trim()}
+                className="px-3 py-2 bg-emerald-600 text-white rounded-xl text-xs font-medium hover:bg-emerald-700 disabled:opacity-50"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-3">
           {sourceGroups.length > 0 ? (
             sourceGroups.map(([source, data]) => (
