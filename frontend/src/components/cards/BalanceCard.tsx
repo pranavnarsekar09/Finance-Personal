@@ -75,18 +75,23 @@ export function BalanceCard({ total, spent, todaySpent, available, savings, savi
       initial={{ y: 20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ delay: 0.05, duration: 0.5 }}
-      className="bg-card rounded-[2rem] shadow-soft p-2 pb-3"
+      className="bg-card rounded-[2rem] shadow-soft p-2 pb-3 border border-border/30"
     >
       <div className="flex justify-between items-center px-4 py-3">
         <span className="text-sm font-medium">{userName} Pass</span>
-        <span className="text-xs text-muted-foreground">Swipe Cards</span>
+        <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-mint animate-pulse" />
+          Swipe Cards
+        </span>
       </div>
 
-      <Carousel setApi={setApi} opts={{ align: "start" }} className="bg-surface-dark rounded-[1.5rem] relative overflow-hidden">
-        <div className="absolute inset-0 opacity-30 grain pointer-events-none" />
-        <div className="absolute top-4 right-4 z-10 bg-gradient-mint rounded-full px-2.5 py-1 text-xs font-bold text-primary italic font-display">
+      <Carousel setApi={setApi} opts={{ align: "start" }} className="bg-gradient-to-br from-surface-dark to-[#1a2f25] rounded-[1.5rem] relative overflow-hidden border border-white/5">
+        <div className="absolute inset-0 opacity-20 grain pointer-events-none" />
+        <div className="absolute top-4 right-4 z-10 bg-gradient-mint rounded-full px-2.5 py-1 text-xs font-bold text-primary italic font-display shadow-lg shadow-mint/20">
           zeni
         </div>
+        <div className="absolute -bottom-10 -left-10 h-32 w-32 bg-mint/10 rounded-full blur-3xl" />
+        <div className="absolute -top-10 -right-10 h-24 w-24 bg-coral/10 rounded-full blur-2xl" />
         <CarouselContent className="ml-0">
           {slides.map((slide) => (
             <CarouselItem key={slide.label} className="pl-0">
@@ -100,23 +105,23 @@ export function BalanceCard({ total, spent, todaySpent, available, savings, savi
                 </div>
 
                 <div>
-                  <div className="mt-4 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <div className="mt-4 h-2 bg-white/10 rounded-full overflow-hidden shadow-inner">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.max(0, Math.min(slide.progress, 100))}%` }}
                       transition={{ duration: 1.1, ease: "easeOut" }}
-                      className="h-full bg-mint rounded-full"
+                      className="h-full bg-gradient-to-r from-mint to-emerald-400 rounded-full shadow-[0_0_10px_rgba(145,197,150,0.5)]"
                     />
                   </div>
                   <div className="mt-3 flex items-center justify-between gap-3">
-                    <div className="flex gap-1">
+                    <div className="flex gap-1.5">
                       {slides.map((_, index) => (
                         <button
                           key={index}
                           type="button"
                           onClick={() => api?.scrollTo(index)}
                           aria-label={`Go to card ${index + 1}`}
-                          className={`h-1.5 rounded-full transition-all ${activeIndex === index ? "w-5 bg-mint" : "w-1.5 bg-white/20"}`}
+                          className={`h-1.5 rounded-full transition-all duration-300 ${activeIndex === index ? "w-6 bg-mint shadow-[0_0_8px_rgba(145,197,150,0.6)]" : "w-1.5 bg-white/20 hover:bg-white/40"}`}
                         />
                       ))}
                     </div>
@@ -134,7 +139,7 @@ export function BalanceCard({ total, spent, todaySpent, available, savings, savi
       <div className="px-2 pt-3">
         <div 
           onClick={() => navigate("/money")}
-          className="rounded-[1.35rem] bg-secondary/70 px-4 py-3.5 cursor-pointer hover:bg-secondary/90 transition active:scale-[0.98]"
+          className="rounded-[1.35rem] bg-gradient-to-br from-secondary/70 to-secondary/50 px-4 py-3.5 cursor-pointer hover:from-secondary/80 hover:to-secondary/60 transition active:scale-[0.98] border border-border/30"
         >
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">

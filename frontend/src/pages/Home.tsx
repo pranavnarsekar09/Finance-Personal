@@ -83,12 +83,16 @@ export default function Home() {
   return (
     <div data-home-swipe="true" className="space-y-5 touch-pan-y">
       <div className="flex justify-between items-center">
-        <div className="bg-card/70 backdrop-blur rounded-full p-1 flex shadow-soft">
+        <div className="bg-card/80 backdrop-blur-md rounded-full p-1 flex shadow-soft border border-border/30">
           {HOME_TABS.map((t) => (
             <button
               key={t}
               onClick={() => changeTab(t)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize transition ${tab === t ? "bg-card shadow-soft" : "text-muted-foreground"}`}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize transition-all duration-200 ${
+                tab === t 
+                  ? "bg-surface-dark text-primary-foreground shadow-md" 
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
             >
               {t}
             </button>

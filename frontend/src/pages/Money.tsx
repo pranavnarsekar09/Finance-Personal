@@ -97,10 +97,10 @@ export default function Money() {
   return (
     <div data-money-swipe="true" className="space-y-5 touch-pan-y">
       <div className="flex justify-between items-center">
-        <div className="bg-card/70 backdrop-blur rounded-full p-1 flex shadow-soft overflow-x-auto no-scrollbar min-w-0">
+        <div className="bg-card/80 backdrop-blur-md rounded-full p-1 flex shadow-soft overflow-x-auto no-scrollbar min-w-0 border border-border/30">
           {(["list", "calendar", "received", "coverings"] as const).map((t) => (
             <button key={t} onClick={() => changeView(t)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize transition whitespace-nowrap ${view === t ? "bg-card shadow-soft" : "text-muted-foreground"}`}>
+              className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize transition-all duration-200 whitespace-nowrap ${view === t ? "bg-surface-dark text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}>
               {t}
             </button>
           ))}
@@ -122,10 +122,10 @@ export default function Money() {
             <>
               <h1 className="font-display text-4xl font-bold tracking-tight">Your Money</h1>
 
-              <div className="bg-card rounded-full shadow-soft flex items-center px-5 py-3.5 gap-3">
+              <div className="bg-card rounded-full shadow-soft flex items-center px-5 py-3.5 gap-3 border border-border/30">
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <input
-                  className="flex-1 bg-transparent outline-none text-sm"
+                  className="flex-1 bg-transparent outline-none text-sm placeholder:text-muted-foreground/50"
                   placeholder="Search transactions"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -135,7 +135,7 @@ export default function Money() {
               <div className="flex gap-2 overflow-x-auto -mx-5 px-5 pb-1 no-scrollbar">
                 {filters.map((f) => (
                   <button key={f} onClick={() => setFilter(f)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium capitalize whitespace-nowrap transition ${filter === f ? "bg-surface-dark text-primary-foreground shadow-lg" : "bg-card text-muted-foreground shadow-soft"}`}>
+                    className={`px-4 py-2 rounded-full text-sm font-medium capitalize whitespace-nowrap transition-all duration-200 ${filter === f ? "bg-surface-dark text-primary-foreground shadow-lg" : "bg-card text-muted-foreground shadow-soft hover:text-foreground border border-transparent hover:border-border/30"}`}>
                     {f}
                   </button>
                 ))}
@@ -150,11 +150,11 @@ export default function Money() {
                       <div className="px-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-bold">
                         {getDateLabel(date)}
                       </div>
-                      <div className="bg-card rounded-[1.75rem] shadow-soft divide-y divide-border/50 overflow-hidden">
-                        {groupedExpenses[date].map((t) => (
-                          <ExpenseItem key={t.id} t={t} />
-                        ))}
-                      </div>
+<div className="bg-card rounded-[1.75rem] shadow-soft divide-y divide-border/30 overflow-hidden border border-border/30">
+                      {groupedExpenses[date].map((t) => (
+                        <ExpenseItem key={t.id} t={t} />
+                      ))}
+                    </div>
                     </div>
                   ))
                 ) : (
@@ -201,23 +201,26 @@ function ExpenseItem({ t }: { t: Expense }) {
   };
 
   return (
-    <div className="group flex items-center gap-3 p-4 hover:bg-secondary/30 transition">
-      <div className="h-11 w-11 rounded-full bg-secondary flex items-center justify-center text-lg">💰</div>
+    <div className="group flex items-center gap-3 p-4 hover:bg-secondary/30 transition-all duration-200">
+      <div className="h-11 w-11 rounded-full bg-gradient-to-br from-secondary to-secondary/50 flex items-center justify-center text-lg border border-border/30">💰</div>
       <div className="flex-1 min-w-0">
         <div className="font-medium truncate">{t.note?.split(" | ")[0] || t.categoryName}</div>
-        <div className="text-[10px] text-muted-foreground flex items-center gap-2">
+        <div className="text-[10px] text-muted-foreground flex items-center gap-2 mt-1">
           {t.note?.includes(" | ") ? (
-            <span>{t.note.split(" | ")[1]}</span>
+            <span className="flex items-center gap-1">
+              <span className="w-1 h-1 rounded-full bg-mint" />
+              {t.note.split(" | ")[1]}
+            </span>
           ) : (
             <>
-              <span className="px-2 py-0.5 rounded-full bg-secondary">{t.categoryName}</span>
-              {t.paymentMethod}
+              <span className="px-2 py-0.5 rounded-full bg-secondary/80 text-[10px]">{t.categoryName}</span>
+              <span className="opacity-60">{t.paymentMethod}</span>
             </>
           )}
         </div>
       </div>
       <div className="text-right flex items-center gap-4">
-        <div className="font-display font-bold">-{formatRupees(t.amount)}</div>
+        <div className="font-display font-bold text-coral">-{formatRupees(t.amount)}</div>
         <button 
           onClick={handleDelete}
           disabled={deleteExpense.isPending}
@@ -276,7 +279,7 @@ function CalendarGrid({ monthStr, currentMonth }: { monthStr: string; currentMon
 
   return (
     <div className="space-y-8">
-      <div className="bg-card rounded-[2.5rem] p-6 shadow-soft">
+      <div className="bg-card rounded-[2.5rem] p-6 shadow-soft border border-border/30">
         <div className="grid grid-cols-7 gap-y-4 text-center">
           {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((d) => (
             <div key={d} className="text-[10px] font-bold text-muted-foreground/60 tracking-widest">{d}</div>
@@ -288,20 +291,26 @@ function CalendarGrid({ monthStr, currentMonth }: { monthStr: string; currentMon
             const entry = entries.find((e: CalendarEntry) => e.date.startsWith(dateKey));
             const hasSpending = entry && entry.expenses && entry.expenses.length > 0;
             const isSelected = selectedDate === dateKey;
+            const isToday = dateKey === format(new Date(), "yyyy-MM-dd");
             
             return (
               <button
                 key={dateKey}
                 onClick={() => setSelectedDate(dateKey)}
                 className={`
-                  relative h-10 w-10 mx-auto rounded-full flex items-center justify-center text-sm font-medium transition-all
-                  ${isSelected ? "bg-surface-dark text-primary-foreground shadow-lg scale-110 z-10" : "text-muted-foreground hover:bg-secondary"}
-                  ${hasSpending && !isSelected ? "bg-mint/30 text-primary" : ""}
+                  relative h-10 w-10 mx-auto rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200
+                  ${isSelected 
+                    ? "bg-surface-dark text-primary-foreground shadow-lg scale-110 z-10" 
+                    : isToday
+                      ? "ring-2 ring-mint/50 text-foreground"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  }
+                  ${hasSpending && !isSelected ? "bg-mint/20 text-primary" : ""}
                 `}
               >
                 {format(date, "d")}
                 {hasSpending && !isSelected && (
-                   <div className="absolute bottom-1.5 h-1 w-1 rounded-full bg-mint" />
+                   <div className="absolute bottom-1.5 h-1 w-1 rounded-full bg-mint shadow-sm" />
                 )}
               </button>
             );
@@ -336,8 +345,8 @@ function CalendarGrid({ monthStr, currentMonth }: { monthStr: string; currentMon
             selectedEntry.expenses.map((e) => {
               const Icon = categoryIcons[e.categoryName] || categoryIcons.default;
               return (
-                <div key={e.id} className="group bg-card rounded-[1.5rem] p-4 shadow-soft flex items-center gap-4 border border-white/50 hover:bg-secondary/10 transition">
-                  <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center">
+                <div key={e.id} className="group bg-card rounded-[1.5rem] p-4 shadow-soft flex items-center gap-4 border border-white/50 hover:border-mint/30 hover:bg-secondary/5 transition-all duration-200">
+                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-secondary to-secondary/50 flex items-center justify-center border border-border/30">
                     <Icon className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">

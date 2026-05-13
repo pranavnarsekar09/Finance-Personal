@@ -53,24 +53,25 @@ export default function AIPage() {
         </div>
       </div>
 
-      <div className="bg-gradient-sage rounded-[2rem] shadow-float p-5 text-primary-foreground overflow-hidden relative">
-        <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
+      <div className="bg-gradient-to-br from-surface-dark via-[#1a3a2e] to-[#0f2420] rounded-[2rem] shadow-float p-5 text-primary-foreground overflow-hidden relative border border-white/5">
+        <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-mint/20 blur-3xl" />
+        <div className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-coral/10 blur-3xl" />
         <div className="flex items-center justify-between gap-4 relative">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.25em] text-primary-foreground/70">Composite Score</div>
-            <div className="font-display text-5xl font-bold mt-2">{scoreAverage}</div>
+            <div className="text-[10px] uppercase tracking-[0.25em] text-mint/70">Composite Score</div>
+            <div className="font-display text-5xl font-bold mt-2 bg-gradient-to-r from-mint to-emerald-300 bg-clip-text text-transparent">{scoreAverage}</div>
             <p className="text-sm text-primary-foreground/80 mt-2 max-w-[18rem]">
               AI is blending your money, nutrition, and habit signals into one quick weekly snapshot.
             </p>
           </div>
-          <div className="h-16 w-16 rounded-[1.5rem] bg-white/10 flex items-center justify-center border border-white/10">
-            <Brain className="h-8 w-8" />
+          <div className="h-16 w-16 rounded-[1.5rem] bg-gradient-to-br from-mint/20 to-coral/20 flex items-center justify-center border border-white/10">
+            <Brain className="h-8 w-8 text-mint" />
           </div>
         </div>
         <div className="mt-5 flex gap-2">
           {data.scores.map((score) => (
-            <div key={score.name} className="flex-1 rounded-2xl bg-white/10 px-3 py-2">
-              <div className="text-[10px] uppercase tracking-widest text-primary-foreground/60">{shortScoreName(score.name)}</div>
+            <div key={score.name} className="flex-1 rounded-2xl bg-white/5 px-3 py-2 border border-white/5">
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60">{shortScoreName(score.name)}</div>
               <div className="font-bold text-lg mt-1">{score.value}</div>
             </div>
           ))}
@@ -80,7 +81,7 @@ export default function AIPage() {
       <SectionTitle icon={Sparkles} label="Predictions" />
       <div className="space-y-3">
         {data.predictions.map((prediction, index) => (
-          <div key={`${prediction.title}-${index}`} className="bg-card rounded-[1.75rem] shadow-soft p-4 border border-white/60">
+          <div key={`${prediction.title}-${index}`} className="bg-card rounded-[1.75rem] shadow-soft p-4 border border-white/60 hover:border-mint/20 hover:shadow-md transition-all duration-200 group">
             <div className="flex items-start gap-3">
               <div className={predictionToneClasses(prediction.tone)}>
                 <Sparkles className="h-4 w-4" />
@@ -151,10 +152,10 @@ function ExpandableRecommendation({
   return (
     <button
       onClick={onToggle}
-      className="w-full text-left bg-card rounded-[1.75rem] shadow-soft p-4 border border-white/60 transition hover:bg-secondary/20"
+      className="w-full text-left bg-card rounded-[1.75rem] shadow-soft p-4 border border-white/60 hover:border-mint/20 hover:shadow-md transition-all duration-200"
     >
       <div className="flex items-start gap-3">
-        <div className="h-11 w-11 rounded-2xl bg-mint/30 flex items-center justify-center shrink-0">
+        <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-mint/30 to-mint/10 flex items-center justify-center shrink-0 border border-mint/20">
           <Target className="h-5 w-5 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
@@ -162,7 +163,7 @@ function ExpandableRecommendation({
           <div className="text-sm text-muted-foreground mt-1">{item.detail}</div>
           <div className="text-xs text-primary font-medium mt-3">{item.impact}</div>
         </div>
-        <ChevronDown className={`h-4 w-4 text-muted-foreground transition ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`h-4 w-4 text-muted-foreground transition duration-300 ${open ? "rotate-180" : ""}`} />
       </div>
       <AnimatePresence initial={false}>
         {open && (
@@ -189,7 +190,7 @@ function ExpandableRecommendation({
 
 function AnomalyCard({ anomaly }: { anomaly: AiAnomaly }) {
   return (
-    <div className="bg-card rounded-[1.75rem] shadow-soft p-4 border border-white/60">
+    <div className="bg-card rounded-[1.75rem] shadow-soft p-4 border border-white/60 hover:shadow-md transition-all duration-200">
       <div className="flex items-start gap-3">
         <div className={anomalySeverityClasses(anomaly.severity)}>
           <AlertTriangle className="h-4 w-4" />
@@ -218,7 +219,7 @@ function ExpandableScore({
   return (
     <button
       onClick={onToggle}
-      className="w-full text-left bg-card rounded-[1.9rem] shadow-soft p-4 border border-white/60"
+      className="w-full text-left bg-card rounded-[1.9rem] shadow-soft p-4 border border-white/60 hover:border-mint/20 hover:shadow-md transition-all duration-200"
     >
       <div className="flex items-center gap-4">
         <div className="relative h-16 w-16 shrink-0">
@@ -228,7 +229,7 @@ function ExpandableScore({
               background: `conic-gradient(hsl(var(--mint)) ${score.value * 3.6}deg, hsl(var(--secondary)) 0deg)`,
             }}
           />
-          <div className="absolute inset-[6px] rounded-full bg-card flex items-center justify-center font-display text-xl font-bold">
+          <div className="absolute inset-[4px] rounded-full bg-card flex items-center justify-center font-display text-xl font-bold border border-border/30">
             {score.value}
           </div>
         </div>
@@ -236,13 +237,13 @@ function ExpandableScore({
           <div className="flex items-center justify-between gap-3">
             <div className="font-semibold">{score.name}</div>
             <div className="flex items-center gap-1 text-xs font-medium text-primary">
-              <TrendIcon className="h-3.5 w-3.5" />
-              {score.trend}
+              <TrendIcon className={`h-3.5 w-3.5 ${score.trend === 'up' ? 'text-emerald-500' : score.trend === 'down' ? 'text-coral' : ''}`} />
+              <span className={score.trend === 'up' ? 'text-emerald-500' : score.trend === 'down' ? 'text-coral' : ''}>{score.trend}</span>
             </div>
           </div>
           <div className="text-sm text-muted-foreground mt-1">{score.explanation}</div>
         </div>
-        <ChevronDown className={`h-4 w-4 text-muted-foreground transition ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`h-4 w-4 text-muted-foreground transition duration-300 ${open ? "rotate-180" : ""}`} />
       </div>
 
       <AnimatePresence initial={false}>

@@ -121,16 +121,16 @@ export default function Health() {
   return (
     <div data-health-swipe="true" className="space-y-5 touch-pan-y">
       <div className="flex justify-between items-center">
-        <div className="bg-card/70 backdrop-blur rounded-full p-1 flex shadow-soft">
+        <div className="bg-card/80 backdrop-blur-md rounded-full p-1 flex shadow-soft border border-border/30">
           <button 
             onClick={() => changeView("today")}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${view === "today" ? "bg-card shadow-soft text-primary" : "text-muted-foreground"}`}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${view === "today" ? "bg-surface-dark text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}
           >
             Today
           </button>
           <button 
             onClick={() => changeView("week")}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${view === "week" ? "bg-card shadow-soft text-primary" : "text-muted-foreground"}`}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${view === "week" ? "bg-surface-dark text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground"}`}
           >
             Week
           </button>
@@ -154,7 +154,8 @@ export default function Health() {
             <div className="animate-in fade-in slide-in-from-bottom-2 space-y-5">
           <h1 className="font-display text-4xl font-bold tracking-tight">Today's Plate</h1>
 
-          <div className="bg-card rounded-[1.75rem] shadow-soft p-6 flex flex-col items-center">
+          <div className="bg-card rounded-[1.75rem] shadow-soft p-6 flex flex-col items-center border border-border/30 relative overflow-hidden">
+            <div className="absolute -top-10 -right-10 h-24 w-24 bg-mint/20 rounded-full blur-3xl" />
             <div className="relative w-56 h-56">
               <svg viewBox="0 0 200 200" className="w-full h-full -rotate-90">
                 {arcs.map((a, i) => {
@@ -165,23 +166,28 @@ export default function Health() {
                     <g key={a.label}>
                       <circle cx="100" cy="100" r={r} fill="none" stroke="hsl(var(--secondary))" strokeWidth="8" />
                       <circle cx="100" cy="100" r={r} fill="none" stroke={a.color} strokeWidth="8" strokeLinecap="round"
-                        strokeDasharray={`${c * pct} ${c}`} />
+                        strokeDasharray={`${c * pct} ${c}`} 
+                        className="transition-all duration-1000 ease-out"
+                        style={{
+                          filter: pct > 0.8 ? `drop-shadow(0 0 6px ${a.color})` : 'none'
+                        }}
+                      />
                     </g>
                   );
                 })}
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                 <div className="text-[10px] text-muted-foreground uppercase tracking-widest">Remaining</div>
-                <div className="font-display text-4xl font-bold">{Math.round(remainingKcal)}</div>
+                <div className={`font-display text-4xl font-bold ${remainingKcal < 200 ? "text-coral" : ""}`}>{Math.round(remainingKcal)}</div>
                 <div className="text-xs text-muted-foreground">kcal</div>
               </div>
             </div>
             <div className="grid grid-cols-4 gap-2 mt-4 w-full">
               {arcs.map((a) => (
                 <div key={a.label} className="text-center">
-                  <div className="h-1.5 rounded-full mx-auto w-8" style={{ background: a.color }} />
-                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1">{a.label}</div>
-                  <div className="text-xs font-bold">{Math.round(a.value)}<span className="text-muted-foreground text-[10px]">/{a.goal}</span></div>
+                  <div className="h-1.5 rounded-full mx-auto w-8 shadow-sm" style={{ background: a.color, boxShadow: `0 0 8px ${a.color}40` }} />
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-2">{a.label}</div>
+                  <div className="text-xs font-bold mt-0.5">{Math.round(a.value)}<span className="text-muted-foreground text-[10px]">/{a.goal}</span></div>
                 </div>
               ))}
             </div>
@@ -210,17 +216,20 @@ export default function Health() {
                <div className="p-10 text-center text-muted-foreground animate-pulse">Loading meals...</div>
             ) : todaysLogs.length > 0 ? (
               todaysLogs.map((m) => (
-                <div key={m.id} className="bg-card rounded-2xl shadow-soft p-4 border border-white/50">
+                <div key={m.id} className="bg-card rounded-2xl shadow-soft p-4 border border-white/50 hover:border-mint/30 transition-colors group">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="font-semibold">{m.foodName?.trim() || "Food"}</div>
-                      <div className="text-xs text-muted-foreground">{typeof m.date === 'string' ? format(parseISO(m.date), "MMM d") : "?"}</div>
+                      <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-mint" />
+                        {typeof m.date === 'string' ? format(parseISO(m.date), "MMM d") : "?"}
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="bg-secondary px-2.5 py-1 rounded-full text-xs font-medium">₹{m.estimatedCost?.toFixed(2) || "0.00"}</span>
+                      <span className="bg-secondary/80 px-2.5 py-1 rounded-full text-xs font-medium">₹{m.estimatedCost?.toFixed(2) || "0.00"}</span>
                       <button
                         onClick={() => deleteFoodLog.mutate(m.id)}
-                        className="p-1.5 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                        className="p-1.5 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
                         disabled={deleteFoodLog.isPending}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -228,15 +237,16 @@ export default function Health() {
                     </div>
                   </div>
                   <div className="flex gap-1.5 mt-3 flex-wrap">
-                    <span className="px-2.5 py-0.5 rounded-full bg-mint/40 text-[10px] font-bold text-primary">{Math.round(m.calories)} kcal</span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-coral/40 text-[10px] font-bold text-primary">P {Math.round(m.protein)}g</span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-sun/40 text-[10px] font-bold text-primary">C {Math.round(m.carbs)}g</span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-sky-pastel/40 text-[10px] font-bold text-primary">F {Math.round(m.fat)}g</span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-mint/30 text-[10px] font-bold text-primary border border-mint/20">{Math.round(m.calories)} kcal</span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-coral/20 text-[10px] font-bold text-coral border border-coral/20">P {Math.round(m.protein)}g</span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-sun/20 text-[10px] font-bold text-amber-600 border border-sun/20">C {Math.round(m.carbs)}g</span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-sky-pastel/20 text-[10px] font-bold text-sky-600 border border-sky-pastel/20">F {Math.round(m.fat)}g</span>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="p-10 text-center text-muted-foreground border-2 border-dashed border-muted-foreground/10 rounded-2xl">
+              <div className="p-10 text-center text-muted-foreground border-2 border-dashed border-muted-foreground/10 rounded-2xl bg-secondary/30">
+                <UtensilsCrossed className="h-8 w-8 mx-auto mb-3 opacity-30" />
                 No meals logged today.
               </div>
             )}
@@ -245,7 +255,8 @@ export default function Health() {
       ) : (
         // --- WEEK VIEW ---
         <div className="animate-in fade-in slide-in-from-right-2 space-y-4">
-          <div className="bg-card rounded-[2rem] p-6 shadow-soft relative overflow-hidden">
+          <div className="bg-card rounded-[2rem] p-6 shadow-soft relative overflow-hidden border border-border/30">
+            <div className="absolute -top-10 -right-10 h-24 w-24 bg-mint/20 rounded-full blur-3xl" />
             <div className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground mb-1">Weekly Average</div>
             <div className="flex items-baseline gap-1">
               <span className="font-display text-5xl font-bold tracking-tight">{weeklyAvgKcal.toLocaleString()}</span>
@@ -264,7 +275,7 @@ export default function Health() {
                   const h = 20 + Math.random() * 60; // Mock heights for visual parity
                   return (
                     <div key={d} className="flex flex-col items-center gap-2">
-                      <div className="w-4 bg-mint/50 rounded-full" style={{ height: `${h}%` }}></div>
+                      <div className="w-4 bg-gradient-to-t from-mint to-emerald-400 rounded-full shadow-md shadow-mint/20" style={{ height: `${h}%` }}></div>
                       <div className="text-[9px] font-bold text-muted-foreground">{d}</div>
                     </div>
                   )
@@ -274,19 +285,19 @@ export default function Health() {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-mint/20 rounded-[1.5rem] p-5 flex flex-col items-center justify-center text-center">
+            <div className="bg-gradient-to-br from-mint/20 to-mint/10 rounded-[1.5rem] p-5 flex flex-col items-center justify-center text-center border border-mint/20">
               <div className="text-[10px] font-bold text-mint uppercase tracking-widest">Protein</div>
               <div className="font-display text-2xl font-bold mt-1">{avgProtein}g</div>
             </div>
-            <div className="bg-coral/10 rounded-[1.5rem] p-5 flex flex-col items-center justify-center text-center">
+            <div className="bg-gradient-to-br from-coral/15 to-coral/5 rounded-[1.5rem] p-5 flex flex-col items-center justify-center text-center border border-coral/20">
               <div className="text-[10px] font-bold text-coral uppercase tracking-widest">Carbs</div>
               <div className="font-display text-2xl font-bold mt-1">{avgCarbs}g</div>
             </div>
-            <div className="bg-secondary rounded-[1.5rem] p-5 flex flex-col items-center justify-center text-center">
+            <div className="bg-gradient-to-br from-secondary to-secondary/50 rounded-[1.5rem] p-5 flex flex-col items-center justify-center text-center border border-border/30">
               <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Fats</div>
               <div className="font-display text-2xl font-bold mt-1">{avgFat}g</div>
             </div>
-            <div className="bg-mint/10 rounded-[1.5rem] p-5 flex flex-col items-center justify-center text-center">
+            <div className="bg-gradient-to-br from-mint/10 to-mint/5 rounded-[1.5rem] p-5 flex flex-col items-center justify-center text-center border border-mint/20">
               <div className="text-[10px] font-bold text-mint uppercase tracking-widest">Fiber</div>
               <div className="font-display text-2xl font-bold mt-1">{avgFiber}g</div>
             </div>
@@ -298,13 +309,14 @@ export default function Health() {
               {dailyHistory.map((day) => {
                 const dateObj = parseISO(day.dateStr);
                 return (
-                  <div key={day.dateStr} className="bg-card rounded-3xl p-4 shadow-soft flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-2xl bg-secondary flex items-center justify-center">
+                  <div key={day.dateStr} className="bg-card rounded-3xl p-4 shadow-soft flex items-center gap-4 border border-border/30 hover:border-mint/20 hover:shadow-md transition-all duration-200 group">
+                    <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-secondary to-secondary/50 flex items-center justify-center border border-border/30">
                       <UtensilsCrossed className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-bold truncate">{day.mealNames}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
+                      <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-mint" />
                         {format(dateObj, "EEEE, MMM d")} • {day.dayKcal.toLocaleString()} kcal
                       </div>
                     </div>
@@ -317,7 +329,7 @@ export default function Health() {
                 );
               })}
               {dailyHistory.length === 0 && (
-                <div className="p-8 text-center text-muted-foreground bg-card rounded-3xl">
+                <div className="p-8 text-center text-muted-foreground bg-card rounded-3xl border border-dashed border-border/30">
                   No meal history yet.
                 </div>
               )}

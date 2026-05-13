@@ -190,7 +190,7 @@ export default function AppShell() {
 
         {/* Bottom nav */}
         <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-30">
-          <div className="bg-card/90 backdrop-blur-xl shadow-float rounded-full px-2 py-2 flex gap-1 border border-border/40">
+          <div className="bg-card/95 backdrop-blur-xl shadow-float rounded-full px-2 py-2 flex gap-1 border border-border/40 shadow-lg">
             {tabs.map((t) => {
               const Icon = t.icon;
               const on = active === t.id;
@@ -199,19 +199,19 @@ export default function AppShell() {
                   key={t.id}
                   onClick={() => navigate(t.id === "home" ? "/" : `/${t.id}`)}
                   className={cn(
-                    "relative flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-colors",
-                    on ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                    "relative flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200",
+                    on ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                   )}
                 >
                   {on && (
                     <motion.div
                       layoutId="navpill"
-                      className="absolute inset-0 bg-surface-dark rounded-full"
+                      className="absolute inset-0 bg-surface-dark rounded-full shadow-md shadow-surface-dark/20"
                       transition={{ type: "spring", stiffness: 400, damping: 32 }}
                     />
                   )}
                   <span className="relative flex items-center gap-2">
-                    <Icon className="h-4 w-4" />
+                    <Icon className={cn("h-4 w-4", on && "text-mint")} />
                     <span className={cn("hidden sm:inline", on && "inline")}>{on ? t.label : ""}</span>
                   </span>
                 </button>

@@ -566,23 +566,24 @@ export default function You() {
 
       <h1 className="font-display text-4xl font-bold tracking-tight">You</h1>
 
-      <div className="bg-card rounded-[1.75rem] shadow-soft p-5 flex items-center gap-4">
-        <div className="h-16 w-16 rounded-full bg-gradient-mint flex items-center justify-center text-2xl font-display font-bold text-primary">
+      <div className="bg-card rounded-[1.75rem] shadow-soft p-5 flex items-center gap-4 border border-border/30 relative overflow-hidden">
+        <div className="absolute -top-10 -right-10 h-24 w-24 bg-mint/20 rounded-full blur-2xl" />
+        <div className="h-16 w-16 rounded-full bg-gradient-to-br from-mint to-emerald-400 flex items-center justify-center text-2xl font-display font-bold text-primary shadow-lg shadow-mint/30">
           {initials}
         </div>
         <div className="flex-1">
           <div className="font-display text-xl font-bold">{profile.name}</div>
           <div className="text-xs text-muted-foreground">{profile.email}</div>
         </div>
-        <button className="text-xs text-primary font-medium">Edit</button>
+        <button className="text-xs text-primary font-medium hover:opacity-80 transition">Edit</button>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-card rounded-2xl shadow-soft p-4">
+        <div className="bg-card rounded-2xl shadow-soft p-4 border border-border/30 hover:border-mint/20 transition-colors">
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Monthly Budget</div>
-          <div className="font-display text-2xl font-bold mt-1">{formatRupees(profile.monthlyBudget)}</div>
+          <div className="font-display text-2xl font-bold mt-1 text-mint">{formatRupees(profile.monthlyBudget)}</div>
         </div>
-        <div className="bg-card rounded-2xl shadow-soft p-4">
+        <div className="bg-card rounded-2xl shadow-soft p-4 border border-border/30 hover:border-mint/20 transition-colors">
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Daily Calories</div>
           <div className="font-display text-2xl font-bold mt-1">{profile.calorieGoal.toLocaleString()}</div>
         </div>
@@ -655,18 +656,18 @@ export default function You() {
         <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Appearance</div>
         <div className="grid grid-cols-2 gap-3">
           {([
-            { id: "light" as const, label: "Light", Icon: Sun, bg: "bg-gradient-cream" },
-            { id: "dark" as const, label: "Dark", Icon: Moon, bg: "bg-surface-dark text-primary-foreground" },
+            { id: "light" as const, label: "Light", Icon: Sun, bg: "bg-gradient-to-br from-[#f8f6f3] to-[#e8e5e0] border-border/30 hover:border-mint/40" },
+            { id: "dark" as const, label: "Dark", Icon: Moon, bg: "bg-gradient-to-br from-[#1a1f1c] to-[#0f1210] text-primary-foreground border-white/5 hover:border-mint/40" },
           ]).map(({ id, label, Icon, bg }) => (
             <button
               key={id}
               onClick={() => toggleTheme(id)}
-              className={`relative ${bg} rounded-2xl p-5 shadow-soft flex flex-col items-start gap-2 border-2 transition ${theme === id ? "border-primary" : "border-transparent"}`}
+              className={`relative ${bg} rounded-2xl p-5 shadow-soft flex flex-col items-start gap-2 border-2 transition-all duration-200 ${theme === id ? "border-primary shadow-lg shadow-mint/20" : ""}`}
             >
-              <Icon className="h-5 w-5" />
+              <Icon className={`h-5 w-5 ${id === 'dark' ? 'text-mint' : 'text-amber-500'}`} />
               <span className="font-semibold">{label}</span>
               {theme === id && (
-                <div className="absolute top-3 right-3 h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                <div className="absolute top-3 right-3 h-6 w-6 rounded-full bg-mint text-primary flex items-center justify-center shadow-md">
                   <Check className="h-3 w-3" />
                 </div>
               )}

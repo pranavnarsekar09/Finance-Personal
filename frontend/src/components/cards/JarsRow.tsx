@@ -30,19 +30,19 @@ export function JarsRow() {
     <div>
       <div className="flex justify-between items-center mb-3">
         <span className="text-xs uppercase tracking-widest text-muted-foreground">Savings Jars</span>
-        <button className="text-xs text-muted-foreground">View All</button>
+        <button className="text-xs text-muted-foreground hover:text-primary transition">View All</button>
       </div>
       <div className="grid grid-cols-3 gap-3">
         {savingsGoals.map((j: Goal, i: number) => {
           const c = colorMap[i % 5];
           const pct = Math.min(100, j.progress || (j.targetAmount > 0 ? (j.currentAmount / j.targetAmount) * 100 : 0));
           return (
-            <div key={j.id} className="bg-card rounded-2xl shadow-soft p-3">
-              <div className={`h-7 w-7 rounded-full ${c.bg} mb-2`} />
+            <div key={j.id} className="bg-card rounded-2xl shadow-soft p-3 border border-border/30 hover:border-mint/20 transition-all duration-200 group">
+              <div className={`h-7 w-7 rounded-full ${c.bg} mb-2 shadow-sm`} />
               <div className="text-xs font-semibold truncate">Savings Goal</div>
               <div className="text-[10px] text-muted-foreground mb-2">Target: ₹{Math.round(j.targetAmount)}</div>
-              <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
-                <div className={`h-full ${c.bar} rounded-full`} style={{ width: `${pct}%` }} />
+              <div className="h-1.5 bg-secondary rounded-full overflow-hidden shadow-inner">
+                <div className={`h-full ${c.bar} rounded-full shadow-sm`} style={{ width: `${pct}%` }} />
               </div>
               <div className="text-[10px] text-muted-foreground mt-1">{Math.round(pct)}%</div>
             </div>
