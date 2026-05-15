@@ -253,9 +253,12 @@ export function generateFinancialInsights(
     p.title.toLowerCase().includes("budget") || p.title.toLowerCase().includes("runway") || p.title.toLowerCase().includes("survival")
   );
   
-  const runwayValue = budgetPrediction 
-    ? budgetPrediction.detail.match(/\d+/)?.[0] + " days" 
-    : `${runwayDays} days`;
+  const numbers = budgetPrediction?.detail.match(/\d+/g) || [];
+  const runwayValue = numbers.length >= 4 
+    ? numbers[3] + " days" 
+    : budgetPrediction 
+      ? budgetPrediction.detail.match(/\d+/)?.[0] + " days"
+      : `${runwayDays} days`;
   
   insights.push({
     id: "budget-runway",
