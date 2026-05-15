@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { cn, formatRupees } from "@/lib/utils";
 import type { CreateGoalRequest, FinanceSettingsRequest, GoalType, ProfileUpsertRequest, AiRecommendation, AiScore, AiAnomaly } from "@/lib/types";
+import { InsightsPage } from "@/features/insights";
 
 const DASHBOARD_TABS = ["today", "insights", "plan"] as const;
 type DashboardTab = (typeof DASHBOARD_TABS)[number];
@@ -164,150 +165,7 @@ function TodayTab() {
 }
 
 function InsightsTab() {
-  const { data: aiData, isLoading, error } = useAiDashboard();
-  const expenseTrend = useExpenseTrend(undefined, true);
-  const coveredExpensesQuery = useCoveredExpenses();
-  const profileQuery = useProfile();
-
-  const coveredExpenses = coveredExpensesQuery.data || [];
-  const profile = profileQuery.data;
-
-  const scoreAverage = useMemo(() => {
-    if (!aiData?.scores?.length) return 0;
-    return Math.round(aiData.scores.reduce((sum, score) => sum + score.value, 0) / aiData.scores.length);
-  }, [aiData]);
-
-  const coveredSummary = useMemo(() => {
-    const monthly = coveredExpenses.filter(e => e.frequency === "monthly").reduce((sum, e) => sum + (e.amount || 0), 0);
-    const semester = coveredExpenses.filter(e => e.frequency === "semester").reduce((sum, e) => sum + (e.amount || 0), 0);
-    const yearly = coveredExpenses.filter(e => e.frequency === "yearly").reduce((sum, e) => sum + (e.amount || 0), 0);
-    const equivalentMonthly = monthly + (semester / 6) + (yearly / 12);
-    return { monthly, semester, yearly, equivalentMonthly };
-  }, [coveredExpenses]);
-
-  if (isLoading) {
-    return <div className="p-10 text-center text-muted-foreground animate-pulse">Loading AI insights...</div>;
-  }
-
-  if (error || !aiData) {
-    return (
-      <div className="space-y-5">
-        <div className="bg-card rounded-[2rem] shadow-soft p-8 text-center">
-          <div className="h-14 w-14 rounded-full bg-secondary mx-auto flex items-center justify-center">
-            <Sparkles className="h-6 w-6 text-muted-foreground" />
-          </div>
-          <h1 className="font-display text-3xl font-bold mt-4">AI is warming up</h1>
-          <p className="text-sm text-muted-foreground mt-2">
-            The AI dashboard couldn&apos;t load right now. Try again once the backend is awake.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-5 pb-6">
-      <div className="pt-2">
-        <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground font-bold mb-1">
-          {format(new Date(), "EEEE, d MMMM")}
-        </div>
-        <h1 className="font-display text-4xl font-bold tracking-tight">Insights</h1>
-        <p className="text-sm text-muted-foreground mt-1">AI-powered analysis of your financial health</p>
-      </div>
-
-      <div className="bg-gradient-to-br from-surface-dark via-[#1a3a2e] to-[#0f2420] rounded-[2rem] shadow-float p-5 text-primary-foreground overflow-hidden relative border border-white/5">
-        <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-mint/20 blur-3xl" />
-        <div className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-coral/10 blur-3xl" />
-        <div className="flex items-center justify-between gap-4 relative">
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.25em] text-mint/70">Composite Score</div>
-            <div className="font-display text-5xl font-bold mt-2 bg-gradient-to-r from-mint to-emerald-300 bg-clip-text text-transparent">{scoreAverage}</div>
-            <p className="text-sm text-primary-foreground/80 mt-2 max-w-[18rem]">
-              AI is blending your money, nutrition, and habit signals into one quick weekly snapshot.
-            </p>
-          </div>
-          <div className="h-16 w-16 rounded-[1.5rem] bg-gradient-to-br from-mint/20 to-coral/20 flex items-center justify-center border border-white/10">
-            <Brain className="h-8 w-8 text-mint" />
-          </div>
-        </div>
-        <div className="mt-5 flex gap-2">
-          {aiData.scores.map((score) => (
-            <div key={score.name} className="flex-1 rounded-2xl bg-white/5 px-3 py-2 border border-white/5">
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60">{shortScoreName(score.name)}</div>
-              <div className="font-bold text-lg mt-1">{score.value}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {coveredExpenses.length > 0 && (
-        <div className="bg-card rounded-[2rem] shadow-soft p-5 space-y-4">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-mint/20 flex items-center justify-center">
-              <Sparkles className="h-4 w-4 text-mint" />
-            </div>
-            <div className="text-xs uppercase tracking-[0.22em] text-muted-foreground font-bold">Covered by Others</div>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Your family is helping cover <span className="text-mint font-semibold">{formatRupees(coveredSummary.equivalentMonthly)}/month</span> equivalent in expenses.
-          </p>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-xl bg-secondary/60 p-3 text-center">
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Monthly</div>
-              <div className="font-bold text-mint mt-1">{formatRupees(coveredSummary.monthly)}</div>
-            </div>
-            <div className="rounded-xl bg-secondary/60 p-3 text-center">
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Semester</div>
-              <div className="font-bold text-mint mt-1">{formatRupees(coveredSummary.semester)}</div>
-            </div>
-            <div className="rounded-xl bg-secondary/60 p-3 text-center">
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Yearly</div>
-              <div className="font-bold text-mint mt-1">{formatRupees(coveredSummary.yearly)}</div>
-            </div>
-          </div>
-          <div className="space-y-2 pt-2">
-            {coveredExpenses.slice(0, 3).map((expense) => (
-              <div key={expense.id} className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">{expense.name}</span>
-                <span className="font-medium">{expense.whoCovers} covers {formatRupees(expense.amount)}</span>
-              </div>
-            ))}
-            {coveredExpenses.length > 3 && (
-              <div className="text-xs text-muted-foreground text-center">+{coveredExpenses.length - 3} more covered expenses</div>
-            )}
-          </div>
-        </div>
-      )}
-
-      <SectionTitle icon={Sparkles} label="AI Predictions" />
-      <div className="space-y-3">
-        {aiData.predictions.map((prediction, index) => (
-          <div key={`${prediction.title}-${index}`} className="bg-card rounded-[1.75rem] shadow-soft p-4 border border-white/60 hover:border-mint/20 hover:shadow-md transition-all duration-200 group">
-            <div className="flex items-start gap-3">
-              <div className={predictionToneClasses(prediction.tone)}>
-                <Sparkles className="h-4 w-4" />
-              </div>
-              <div className="min-w-0">
-                <div className="font-semibold">{prediction.title}</div>
-                <div className="text-sm text-muted-foreground mt-1">{prediction.detail}</div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <SectionTitle icon={Target} label="Recommendations" />
-      <div className="space-y-3">
-        {aiData.recommendations.slice(0, 2).map((recommendation, index) => (
-          <div key={`${recommendation.title}-${index}`} className="bg-card rounded-[1.75rem] shadow-soft p-4 border border-white/60">
-            <div className="font-semibold">{recommendation.title}</div>
-            <div className="text-sm text-muted-foreground mt-1">{recommendation.detail}</div>
-            <div className="text-xs text-primary font-medium mt-2">{recommendation.impact}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  return <InsightsPage />;
 }
 
 function PlanTab() {
