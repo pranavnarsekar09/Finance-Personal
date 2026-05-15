@@ -1,19 +1,31 @@
 import { useState, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Search, ChevronLeft, ChevronRight, Car, ShoppingBag, Utensils, Zap, Coffee, Trash2, Wallet, PiggyBank, TrendingUp, TrendingDown, Calendar as CalendarIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, Car, ShoppingBag, Utensils, Zap, Coffee, Wallet, PiggyBank, TrendingUp, TrendingDown, Calendar as CalendarIcon } from "lucide-react";
 import { useExpenses, useCalendar, useProfile, useDeleteExpense, useDeleteExpensesByMonth, useDeleteFoodLog, useFinance, useDashboard, useExpenseTrend } from "@/hooks/useApi";
 import { useSwipeNative } from "@/hooks/useSwipe";
 import { useHaptic } from "@/hooks/useHaptic";
-import { format, parseISO, isToday, isYesterday, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, getDay } from "date-fns";
+import { format, parseISO, isToday, isYesterday, addMonths, subMonths, startOfMonth } from "date-fns";
 import { formatRupees, cn } from "@/lib/utils";
 import { toast } from "sonner";
-import type { CalendarEntry, Expense } from "@/lib/types";
+import type { Expense } from "@/lib/types";
 import { SubtabPillBarWithIndicator } from "@/components/layout/SubtabPillBar";
 import { ReceivedTab } from "@/components/finance/ReceivedTab";
 import { CoveringsTab } from "@/components/finance/CoveringsTab";
 import { CategoryPressure } from "@/components/cards/CategoryPressure";
 import { SpendingTrendChart } from "@/components/charts/SpendingTrendChart";
 import { CalendarGrid } from "@/components/calendar/CalendarGrid";
+import { TransactionCard } from "@/components/transactions/TransactionCard";
+import { DailySummaryHeader } from "@/components/transactions/DailySummaryHeader";
+import { TransactionAnalyticsBar } from "@/components/transactions/TransactionAnalyticsBar";
+import { SpendingInsightStrip } from "@/components/transactions/SpendingInsightStrip";
+import { PremiumSearchBar, PremiumCategoryFilter } from "@/components/transactions/PremiumFilter";
+import {
+  calculateTransactionAnalytics,
+  generateDailySummaries,
+  generateTransactionInsights,
+  getTransactionContext,
+  calculateCategoryTrend,
+} from "@/components/transactions/transactionUtils";
 
 const MONEY_TABS = ["overview", "transactions", "income", "covered", "calendar"] as const;
 type MoneyTab = (typeof MONEY_TABS)[number];
@@ -223,38 +235,66 @@ function TransactionsTab() {
   const [search, setSearch] = useState("");
   const { data: expenses, isLoading: expLoading } = useExpenses(undefined, format(currentMonth, "yyyy-MM"));
   const { data: profile } = useProfile();
+  const deleteExpense = useDeleteExpense();
 
   const filters = ["All", ...(profile?.categories?.map((c: any) => c.name) || [])];
+  const monthlyBudget = profile?.monthlyBudget || 0;
 
-  const filteredExpenses = (expenses || []).filter((e: Expense) => {
-    const matchesFilter = filter === "All" || e.categoryName === filter;
-    const matchesSearch =
-      (e.note?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
-      e.categoryName.toLowerCase().includes(search.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
+  const filteredExpenses = useMemo(() => {
+    return (expenses || []).filter((e: Expense) => {
+      const matchesFilter = filter === "All" || e.categoryName === filter;
+      const matchesSearch =
+        (e.note?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
+        e.categoryName.toLowerCase().includes(search.toLowerCase());
+      return matchesFilter && matchesSearch;
+    });
+  }, [expenses, filter, search]);
 
-  const groupedExpenses = filteredExpenses.reduce((groups: Record<string, Expense[]>, expense) => {
-    const dateKey = expense.date.split('T')[0];
-    if (!groups[dateKey]) groups[dateKey] = [];
-    groups[dateKey].push(expense);
-    return groups;
-  }, {});
+  const analytics = useMemo(() => {
+    return calculateTransactionAnalytics(filteredExpenses, monthlyBudget, currentMonth);
+  }, [filteredExpenses, monthlyBudget, currentMonth]);
+
+  const dailySummaries = useMemo(() => {
+    return generateDailySummaries(filteredExpenses, monthlyBudget);
+  }, [filteredExpenses, monthlyBudget]);
+
+  const insights = useMemo(() => {
+    return generateTransactionInsights(analytics, dailySummaries);
+  }, [analytics, dailySummaries]);
+
+  const categoryTrend = useMemo(() => {
+    return calculateCategoryTrend(filteredExpenses);
+  }, [filteredExpenses]);
+
+  const groupedExpenses = useMemo(() => {
+    return filteredExpenses.reduce((groups: Record<string, Expense[]>, expense) => {
+      const dateKey = expense.date.split('T')[0];
+      if (!groups[dateKey]) groups[dateKey] = [];
+      groups[dateKey].push(expense);
+      return groups;
+    }, {});
+  }, [filteredExpenses]);
 
   const sortedDates = Object.keys(groupedExpenses).sort((a, b) => b.localeCompare(a));
 
-  const getDateLabel = (dateStr: string) => {
-    const date = parseISO(dateStr);
-    if (isToday(date)) return "Today";
-    if (isYesterday(date)) return "Yesterday";
-    return format(date, "EEEE, d MMM");
-  };
+  const dailySummaryMap = useMemo(() => {
+    return dailySummaries.reduce((map, summary) => {
+      map[summary.date] = summary;
+      return map;
+    }, {} as Record<string, typeof dailySummaries[0]>);
+  }, [dailySummaries]);
 
   const handlePrevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
   const handleNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
 
-  const totalExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
-  const avgExpense = filteredExpenses.length > 0 ? totalExpenses / filteredExpenses.length : 0;
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteExpense.mutateAsync(id);
+      toast.success("Expense deleted");
+    } catch (err: any) {
+      toast.error("Failed to delete: " + err.message);
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -273,52 +313,41 @@ function TransactionsTab() {
         </button>
       </div>
 
-      <div className="bg-card rounded-full shadow-soft flex items-center px-5 py-3.5 gap-3 border border-border/30">
-        <Search className="h-4 w-4 text-muted-foreground" />
-        <input
-          className="flex-1 bg-transparent outline-none text-sm placeholder:text-muted-foreground/50"
-          placeholder="Search transactions"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
+      <PremiumSearchBar value={search} onChange={setSearch} />
 
-      <div className="flex gap-2 overflow-x-auto -mx-5 px-5 pb-1 no-scrollbar">
-        {filters.map((f) => (
-          <button key={f} onClick={() => setFilter(f)}
-            className={`px-4 py-2 rounded-full text-sm font-medium capitalize whitespace-nowrap transition-all duration-200 ${filter === f ? "bg-surface-dark text-primary-foreground shadow-lg" : "bg-card text-muted-foreground shadow-soft hover:text-foreground border border-transparent hover:border-border/30"}`}>
-            {f}
-          </button>
-        ))}
-      </div>
+      <PremiumCategoryFilter categories={filters} activeCategory={filter} onCategoryChange={setFilter} />
 
       {filteredExpenses.length > 0 && (
-        <div className="bg-card rounded-[1.5rem] shadow-soft p-4 flex justify-between items-center">
-          <div className="text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">{filteredExpenses.length}</span> transactions
-          </div>
-          <div className="text-xs text-muted-foreground">
-            Total: <span className="font-medium text-foreground">{formatRupees(totalExpenses)}</span> • Avg: <span className="font-medium text-foreground">{formatRupees(avgExpense)}</span>
-          </div>
-        </div>
+        <>
+          <TransactionAnalyticsBar analytics={analytics} />
+          <SpendingInsightStrip insights={insights} />
+        </>
       )}
 
-      <div className="space-y-6">
+      <div className="space-y-5">
         {expLoading ? (
           <div className="p-10 text-center text-muted-foreground animate-pulse bg-card rounded-[1.75rem]">Loading transactions...</div>
         ) : sortedDates.length > 0 ? (
-          sortedDates.map((date) => (
-            <div key={date} className="space-y-2">
-              <div className="px-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-bold">
-                {getDateLabel(date)}
+          sortedDates.map((date) => {
+            const daySummary = dailySummaryMap[date];
+            return (
+              <div key={date} className="space-y-2">
+                {daySummary && <DailySummaryHeader summary={daySummary} />}
+                <div className="bg-card rounded-[1.75rem] shadow-soft divide-y divide-border/20 overflow-hidden border border-border/20">
+                  {groupedExpenses[date].map((t) => (
+                    <TransactionCard
+                      key={t.id}
+                      expense={t}
+                      context={getTransactionContext(t, analytics.averageTransaction, categoryTrend)}
+                      averageAmount={analytics.averageTransaction}
+                      onDelete={handleDelete}
+                      isDeleting={deleteExpense.isPending}
+                    />
+                  ))}
+                </div>
               </div>
-              <div className="bg-card rounded-[1.75rem] shadow-soft divide-y divide-border/30 overflow-hidden border border-border/30">
-                {groupedExpenses[date].map((t) => (
-                  <ExpenseItem key={t.id} t={t} />
-                ))}
-              </div>
-            </div>
-          ))
+            );
+          })
         ) : (
           <div className="p-10 text-center text-muted-foreground bg-card rounded-[1.75rem]">No transactions found.</div>
         )}
@@ -414,53 +443,3 @@ function CalendarTabContent() {
   );
 }
 
-function ExpenseItem({ t }: { t: Expense }) {
-  const deleteExpense = useDeleteExpense();
-  
-  const handleDelete = async () => {
-    if (confirm("Are you sure you want to delete this expense?")) {
-      try {
-        await deleteExpense.mutateAsync(t.id);
-        toast.success("Expense deleted");
-      } catch (err: any) {
-        toast.error("Failed to delete: " + err.message);
-      }
-    }
-  };
-
-  const Icon = categoryIcons[t.categoryName] || categoryIcons.default;
-
-  return (
-    <div className="group flex items-center gap-3 p-4 hover:bg-secondary/30 transition-all duration-200">
-      <div className="h-11 w-11 rounded-full bg-gradient-to-br from-secondary to-secondary/50 flex items-center justify-center border border-border/30">
-        <Icon className="h-5 w-5 text-muted-foreground" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="font-medium truncate">{t.note?.split(" | ")[0] || t.categoryName}</div>
-        <div className="text-[10px] text-muted-foreground flex items-center gap-2 mt-1">
-          {t.note?.includes(" | ") ? (
-            <span className="flex items-center gap-1">
-              <span className="w-1 h-1 rounded-full bg-mint" />
-              {t.note.split(" | ")[1]}
-            </span>
-          ) : (
-            <>
-              <span className="px-2 py-0.5 rounded-full bg-secondary/80 text-[10px]">{t.categoryName}</span>
-              <span className="opacity-60">{t.paymentMethod}</span>
-            </>
-          )}
-        </div>
-      </div>
-      <div className="text-right flex items-center gap-4">
-        <div className="font-display font-bold text-coral">-{formatRupees(t.amount)}</div>
-        <button 
-          onClick={handleDelete}
-          disabled={deleteExpense.isPending}
-          className="p-2 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition disabled:opacity-50"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
-      </div>
-    </div>
-  );
-}
