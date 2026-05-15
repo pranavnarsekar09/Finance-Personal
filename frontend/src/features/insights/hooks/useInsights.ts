@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useDashboard, useFinance, useCoveredExpenses, useGoals } from "@/hooks/useApi";
+import { useDashboard, useFinance, useCoveredExpenses, useGoals, useAiDashboard } from "@/hooks/useApi";
 import { api } from "@/lib/api";
 import { DEFAULT_USER_ID } from "@/lib/constants";
-import { format, subMonths } from "date-fns";
+import { format } from "date-fns";
 import { generateInsightsData } from "../utils/calculations";
 import type { InsightsData } from "../types";
 
@@ -36,6 +36,7 @@ export function useInsightsData(): {
   const financeQuery = useFinance(undefined, today);
   const goalsQuery = useGoals();
   const coveredExpensesQuery = useCoveredExpenses();
+  const aiDashboardQuery = useAiDashboard();
 
   const expenseQueries = useExpensesByMonth(currentMonth);
   const foodLogQueries = useFoodLogsByMonth(currentMonth);
@@ -65,6 +66,7 @@ export function useInsightsData(): {
     const coveredExpenses = coveredExpensesQuery.data || [];
     const expenses = expenseQueries.data || [];
     const meals = foodLogQueries.data || [];
+    const aiData = aiDashboardQuery.data;
 
     return generateInsightsData(
       dashboard,
@@ -72,7 +74,8 @@ export function useInsightsData(): {
       expenses,
       meals,
       coveredExpenses,
-      goals
+      goals,
+      aiData
     );
   }, [
     dashboardQuery.data,
@@ -81,6 +84,7 @@ export function useInsightsData(): {
     coveredExpensesQuery.data,
     expenseQueries.data,
     foodLogQueries.data,
+    aiDashboardQuery.data,
     isLoading,
     isError
   ]);

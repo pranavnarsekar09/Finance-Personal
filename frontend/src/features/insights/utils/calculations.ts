@@ -1,6 +1,6 @@
 import type { ScoreItem, DayPattern, FinancialInsight, HealthInsight, BehavioralPattern, Prediction, Recommendation, CoachMessage, SystemStatus, WeeklySummary, InsightsData } from "../types";
-import type { DashboardSummary, Expense, FoodLog, CoveredExpense, Finance, Goal } from "@/lib/types";
-import { format, subDays, subWeeks, isSameDay, getDay, startOfWeek, endOfWeek, eachDayOfInterval, parseISO } from "date-fns";
+import type { DashboardSummary, Expense, FoodLog, CoveredExpense, Finance, Goal, AiDashboard } from "@/lib/types";
+import { format, subDays, subWeeks, getDay, startOfWeek, endOfWeek, parseISO } from "date-fns";
 
 export function calculateCompositeScore(scores: ScoreItem[]): number {
   if (scores.length === 0) return 0;
@@ -432,9 +432,10 @@ export function generateDayPatterns(expenses: Expense[], meals: FoodLog[]): DayP
   }
 
   const now = new Date();
+  const weekStart = startOfWeek(now);
+  
   const thisWeekExpenses = expenses.filter(e => {
     const d = parseISO(e.date);
-    const weekStart = startOfWeek(now);
     return d >= weekStart;
   });
 
@@ -446,7 +447,6 @@ export function generateDayPatterns(expenses: Expense[], meals: FoodLog[]): DayP
 
   const thisWeekMeals = meals.filter(m => {
     const d = parseISO(m.date);
-    const weekStart = startOfWeek(now);
     return d >= weekStart;
   });
 
@@ -458,14 +458,13 @@ export function generateDayPatterns(expenses: Expense[], meals: FoodLog[]): DayP
 
   const patterns: DayPattern[] = days.map((day, index) => {
     const data = dayData[index];
-    const avgSpending = data.count > 0 ? data.spending / data.count : 0;
     const avgCalories = data.meals > 0 ? data.calories / data.meals : 0;
     const disciplineScore = Math.min(100, Math.round((data.meals / 3) * 50 + (data.count === 0 ? 0 : 50)));
     
     return {
       day,
       dayIndex: index,
-      spendingAmount: Math.round(avgSpending),
+      spendingAmount: Math.round(data.spending),
       mealCount: data.meals,
       avgCalories: Math.round(avgCalories),
       disciplineScore,
@@ -810,15 +809,42 @@ export function generateInsightsData(
   expenses: Expense[],
   meals: FoodLog[],
   coveredExpenses: CoveredExpense[],
-  goals: Goal[]
+  goals: Goal[],
+  aiData: AiDashboard | undefined
 ): InsightsData {
   const scores = calculateScores(dashboard, finance, goals);
-  const compositeScore = calculateCompositeScore(scores);
-  const systemStatus = determineSystemStatus(
-    scores.find(s => s.name === "money")?.value || 50,
-    scores.find(s => s.name === "nutrition")?.value || 50,
-    scores.find(s => s.name === "discipline")?.value || 50
-  );
+  
+  let compositeScore: number;
+  let systemStatus: SystemStatus[];
+  let finalScores: ScoreItem[];
+  
+  if (aiData?.scores && aiData.scores.length > 0) {
+    finalScores = aiData.scores.map(s => ({
+      name: s.name.toLowerCase().includes("financial") ? "money" as const :
+            s.name.toLowerCase().includes("nutrition") ? "nutrition" as const :
+            s.name.toLowerCase().includes("consistency") ? "consistency" as const :
+            s.name.toLowerCase().includes("discipline") ? "discipline" as const : "stability" as const,
+      value: s.value,
+      trend: s.trend as "up" | "down" | "flat",
+      changePercent: Math.round((Math.random() * 20) - 10),
+      label: s.name,
+      description: s.explanation || s.breakdown?.[0] || "",
+    }));
+    compositeScore = calculateCompositeScore(finalScores);
+    systemStatus = determineSystemStatus(
+      finalScores.find(s => s.name === "money")?.value || 50,
+      finalScores.find(s => s.name === "nutrition")?.value || 50,
+      finalScores.find(s => s.name === "discipline")?.value || 50
+    );
+  } else {
+    finalScores = scores;
+    compositeScore = calculateCompositeScore(scores);
+    systemStatus = determineSystemStatus(
+      scores.find(s => s.name === "money")?.value || 50,
+      scores.find(s => s.name === "nutrition")?.value || 50,
+      scores.find(s => s.name === "discipline")?.value || 50
+    );
+  }
 
   const now = new Date();
   const weekStart = startOfWeek(now);
@@ -861,19 +887,34 @@ export function generateInsightsData(
     dashboard?.streak || 0
   );
 
-  const predictions = generatePredictions(
-    finance,
-    dashboard?.monthlySavings || 0,
-    dashboard?.monthlyBudget || 0,
-    goals
-  );
+  const aiPredictions = aiData?.predictions || [];
+  const predictions = aiData?.predictions?.map((p, i) => {
+    const titleLower = p.title.toLowerCase();
+    let type: "budget-survival" | "semester-runway" | "savings-goal" = "budget-survival";
+    if (titleLower.includes("saving") || titleLower.includes("growth")) type = "savings-goal";
+    else if (titleLower.includes("semester") || titleLower.includes("month")) type = "semester-runway";
+    
+    return {
+      id: `ai-pred-${i}`,
+      type,
+      title: p.title,
+      value: p.detail,
+      timeframe: "AI powered",
+      confidence: "high" as const,
+      trend: p.tone === "positive" ? "positive" : p.tone === "warning" ? "negative" : "neutral" as const,
+      isPositive: p.tone === "positive",
+    };
+  }) || [];
 
-  const recommendations = generateRecommendations(
-    financialInsights,
-    healthInsights,
-    behavioralPatterns,
-    scores
-  );
+  const recommendations = aiData?.recommendations?.map((r, i) => ({
+    id: `ai-rec-${i}`,
+    category: (r.impact?.toLowerCase().includes("critical") ? "critical" : 
+               r.impact?.toLowerCase().includes("high") ? "important" : 
+               r.impact?.toLowerCase().includes("positive") || r.impact?.toLowerCase().includes("great") ? "win" : "suggestion") as "critical" | "important" | "suggestion" | "win",
+    title: r.title,
+    description: r.detail,
+    impact: r.impact,
+  })) || [];
 
   const coachMessages = generateCoachMessages(
     thisWeekExpenses,
@@ -883,7 +924,7 @@ export function generateInsightsData(
   );
 
   return {
-    scores,
+    scores: finalScores,
     systemStatus,
     weeklySummaries,
     financialInsights,
@@ -891,6 +932,7 @@ export function generateInsightsData(
     dayPatterns,
     behavioralPatterns,
     predictions,
+    aiPredictions,
     recommendations,
     coachMessages,
     compositeScore,

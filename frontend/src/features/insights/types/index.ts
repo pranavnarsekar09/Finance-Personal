@@ -100,6 +100,7 @@ export interface InsightsData {
   dayPatterns: DayPattern[];
   behavioralPatterns: BehavioralPattern[];
   predictions: Prediction[];
+  aiPredictions: { title: string; detail: string; tone: string }[];
   recommendations: Recommendation[];
   coachMessages: CoachMessage[];
   compositeScore: number;
