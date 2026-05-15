@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, ChevronLeft, ChevronRight, Car, ShoppingBag, Utensils, Zap, Coffee, Trash2, Wallet, PiggyBank, TrendingUp, TrendingDown, Calendar as CalendarIcon } from "lucide-react";
-import { useExpenses, useCalendar, useProfile, useDeleteExpense, useDeleteExpensesByMonth, useFinance, useDashboard, useExpenseTrend } from "@/hooks/useApi";
+import { useExpenses, useCalendar, useProfile, useDeleteExpense, useDeleteExpensesByMonth, useDeleteFoodLog, useFinance, useDashboard, useExpenseTrend } from "@/hooks/useApi";
 import { useSwipeNative } from "@/hooks/useSwipe";
 import { useHaptic } from "@/hooks/useHaptic";
 import { format, parseISO, isToday, isYesterday, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, getDay } from "date-fns";
@@ -13,6 +13,7 @@ import { ReceivedTab } from "@/components/finance/ReceivedTab";
 import { CoveringsTab } from "@/components/finance/CoveringsTab";
 import { CategoryPressure } from "@/components/cards/CategoryPressure";
 import { SpendingTrendChart } from "@/components/charts/SpendingTrendChart";
+import { CalendarGrid } from "@/components/calendar/CalendarGrid";
 
 const MONEY_TABS = ["overview", "transactions", "income", "covered", "calendar"] as const;
 type MoneyTab = (typeof MONEY_TABS)[number];
@@ -353,9 +354,44 @@ function CoveredTabContent() {
 function CalendarTabContent() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const monthStr = format(currentMonth, "yyyy-MM");
-  
-  const handlePrevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
-  const handleNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
+
+  const { data: calendar, isLoading: calLoading } = useCalendar(undefined, monthStr);
+  const deleteExpense = useDeleteExpense();
+  const deleteFoodLog = useDeleteFoodLog();
+  const deleteExpensesByMonth = useDeleteExpensesByMonth();
+
+  const handleDelete = async (id: string) => {
+    if (confirm("Delete this expense?")) {
+      try {
+        await deleteExpense.mutateAsync(id);
+        toast.success("Expense deleted");
+      } catch (err: any) {
+        toast.error("Failed: " + err.message);
+      }
+    }
+  };
+
+  const handleDeleteMeal = async (id: string) => {
+    if (confirm("Delete this meal log?")) {
+      try {
+        await deleteFoodLog.mutateAsync(id);
+        toast.success("Meal deleted");
+      } catch (err: any) {
+        toast.error("Failed: " + err.message);
+      }
+    }
+  };
+
+  const handleDeleteMonth = async () => {
+    if (confirm(`Delete ALL expenses for ${format(currentMonth, "MMMM yyyy")}?`)) {
+      try {
+        await deleteExpensesByMonth.mutateAsync(monthStr);
+        toast.success("Month data cleared");
+      } catch (err: any) {
+        toast.error("Failed: " + err.message);
+      }
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -364,16 +400,16 @@ function CalendarTabContent() {
         <p className="text-sm text-muted-foreground mt-1">Your unified life calendar</p>
       </div>
 
-      <div className="flex items-center justify-between px-2">
-        <button onClick={handlePrevMonth} className="h-10 w-10 rounded-full bg-card shadow-soft flex items-center justify-center hover:bg-secondary transition">
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-        <h1 className="font-display text-2xl font-bold">{format(currentMonth, "MMMM yyyy")}</h1>
-        <button onClick={handleNextMonth} className="h-10 w-10 rounded-full bg-card shadow-soft flex items-center justify-center hover:bg-secondary transition">
-          <ChevronRight className="h-5 w-5" />
-        </button>
-      </div>
-      <CalendarGrid monthStr={monthStr} currentMonth={currentMonth} />
+      <CalendarGrid
+        entries={calendar || []}
+        isLoading={calLoading}
+        currentMonth={currentMonth}
+        onMonthChange={setCurrentMonth}
+        onDeleteExpense={handleDelete}
+        onDeleteMeal={handleDeleteMeal}
+        onDeleteMonth={handleDeleteMonth}
+        isDeleting={deleteExpensesByMonth.isPending}
+      />
     </div>
   );
 }
@@ -424,160 +460,6 @@ function ExpenseItem({ t }: { t: Expense }) {
         >
           <Trash2 className="h-4 w-4" />
         </button>
-      </div>
-    </div>
-  );
-}
-
-function CalendarGrid({ monthStr, currentMonth }: { monthStr: string; currentMonth: Date }) {
-  const { data: calendar, isLoading } = useCalendar(undefined, monthStr);
-  const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
-  const deleteExpense = useDeleteExpense();
-  const deleteExpensesByMonth = useDeleteExpensesByMonth();
-  
-  const days = useMemo(() => {
-    const start = startOfMonth(currentMonth);
-    const end = endOfMonth(currentMonth);
-    const dateArray = eachDayOfInterval({ start, end });
-    
-    const firstDay = getDay(start);
-    const padding = Array(firstDay).fill(null);
-    return [...padding, ...dateArray];
-  }, [currentMonth]);
-
-  if (isLoading) return <div className="h-[400px] bg-secondary/50 rounded-[2rem] animate-pulse" />;
-
-  const entries = calendar || [];
-  const selectedEntry = entries.find((e: CalendarEntry) => e.date.startsWith(selectedDate));
-  const totalSpent = selectedEntry?.expenses?.reduce((acc, e) => acc + e.amount, 0) || 0;
-
-  const handleDelete = async (id: string | number) => {
-    if (confirm("Are you sure you want to delete this expense?")) {
-      try {
-        await deleteExpense.mutateAsync(id);
-        toast.success("Expense deleted");
-      } catch (err: any) {
-        toast.error("Failed to delete: " + err.message);
-      }
-    }
-  };
-
-  const handleDeleteMonth = async () => {
-    if (confirm(`Are you sure you want to delete ALL expenses for ${format(currentMonth, "MMMM yyyy")}? This cannot be undone.`)) {
-      try {
-        await deleteExpensesByMonth.mutateAsync(monthStr);
-        toast.success(`All expenses for ${format(currentMonth, "MMMM yyyy")} have been deleted`);
-      } catch (err: any) {
-        toast.error("Failed to delete month data: " + err.message);
-      }
-    }
-  };
-
-  return (
-    <div className="space-y-8">
-      <div className="bg-card rounded-[2.5rem] p-6 shadow-soft border border-border/30">
-        <div className="grid grid-cols-7 gap-y-4 text-center">
-          {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((d) => (
-            <div key={d} className="text-[10px] font-bold text-muted-foreground/60 tracking-widest">{d}</div>
-          ))}
-          {days.map((date, i) => {
-            if (!date) return <div key={`empty-${i}`} />;
-            
-            const dateKey = format(date, "yyyy-MM-dd");
-            const entry = entries.find((e: CalendarEntry) => e.date.startsWith(dateKey));
-            const hasSpending = entry && entry.expenses && entry.expenses.length > 0;
-            const isSelected = selectedDate === dateKey;
-            const isTodayDate = dateKey === format(new Date(), "yyyy-MM-dd");
-            
-            return (
-              <button
-                key={dateKey}
-                onClick={() => setSelectedDate(dateKey)}
-                className={`
-                  relative h-10 w-10 mx-auto rounded-full flex items-center justify-center text-sm font-medium transition-all duration-200
-                  ${isSelected 
-                    ? "bg-surface-dark text-primary-foreground shadow-lg scale-110 z-10" 
-                    : isTodayDate
-                      ? "ring-2 ring-mint/50 text-foreground"
-                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                  }
-                  ${hasSpending && !isSelected ? "bg-mint/20 text-primary" : ""}
-                `}
-              >
-                {format(date, "d")}
-                {hasSpending && !isSelected && (
-                   <div className="absolute bottom-1.5 h-1 w-1 rounded-full bg-mint shadow-sm" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="px-2 space-y-5 pb-10">
-        <div className="flex justify-between items-end">
-          <div>
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-1">Selected Day</div>
-            <div className="font-display text-3xl font-bold">{format(parseISO(selectedDate), "MMM d")}</div>
-          </div>
-          <div className="text-right flex flex-col items-end gap-2">
-            <div>
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-1">Total Spent</div>
-              <div className="font-display text-2xl font-bold text-coral">-{formatRupees(totalSpent)}</div>
-            </div>
-            <button
-              onClick={handleDeleteMonth}
-              disabled={deleteExpensesByMonth.isPending}
-              className="text-xs px-2 py-1 rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20 transition disabled:opacity-50 flex items-center gap-1 font-medium"
-            >
-              <Trash2 className="h-3 w-3" />
-              Delete Month
-            </button>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          {selectedEntry?.expenses && selectedEntry.expenses.length > 0 ? (
-            selectedEntry.expenses.map((e) => {
-              const Icon = categoryIcons[e.categoryName] || categoryIcons.default;
-              return (
-                <div key={e.id} className="group bg-card rounded-[1.5rem] p-4 shadow-soft flex items-center gap-4 border border-white/50 hover:border-mint/30 hover:bg-secondary/5 transition-all duration-200">
-                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-secondary to-secondary/50 flex items-center justify-center border border-border/30">
-                    <Icon className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-bold text-sm truncate">{e.note?.split(" | ")[0]}</div>
-                    <div className="text-[10px] text-muted-foreground flex flex-col mt-0.5">
-                      {e.note?.includes(" | ") ? (
-                         <span className="truncate">{e.note.split(" | ")[1]}</span>
-                      ) : (
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-medium">{e.categoryName}</span>
-                          <span className="opacity-40">•</span>
-                          <span>{e.paymentMethod}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-right flex items-center gap-3">
-                    <div className="font-display font-bold text-coral">-{formatRupees(e.amount)}</div>
-                    <button 
-                      onClick={() => handleDelete(e.id)}
-                      disabled={deleteExpense.isPending}
-                      className="p-2 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition disabled:opacity-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="bg-secondary/30 rounded-[1.5rem] p-10 text-center border-2 border-dashed border-muted-foreground/10">
-              <p className="text-sm text-muted-foreground">No expenses logged for this day</p>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
