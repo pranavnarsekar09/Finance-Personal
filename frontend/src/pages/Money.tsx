@@ -331,7 +331,7 @@ function IncomeTabContent() {
     <div className="space-y-5">
       <div className="pt-2">
         <h1 className="font-display text-4xl font-bold tracking-tight">Income</h1>
-        <p className="text-sm text-muted-foreground mt-1">Track your income sources and received amounts</p>
+        <p className="text-sm text-muted-foreground mt-1">Your financial wellness at a glance</p>
       </div>
       <ReceivedTab />
     </div>
