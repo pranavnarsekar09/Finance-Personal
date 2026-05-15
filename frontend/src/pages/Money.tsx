@@ -26,6 +26,18 @@ import {
   getTransactionContext,
   calculateCategoryTrend,
 } from "@/components/transactions/transactionUtils";
+import { FinancialHeroCard } from "@/components/overview/FinancialHeroCard";
+import { SmartStatGrid } from "@/components/overview/SmartStatCard";
+import { FinancialInsightStrip } from "@/components/overview/FinancialInsightStrip";
+import { SmartActivityCard } from "@/components/overview/SmartActivityCard";
+import { EnhancedSpendingTrend } from "@/components/overview/EnhancedSpendingTrend";
+import {
+  calculateFinancialHealth,
+  calculateSpendingPace,
+  analyzeTrend,
+  generateFinancialInsights,
+  FinancialSummary,
+} from "@/components/overview/financialUtils";
 
 const MONEY_TABS = ["overview", "transactions", "income", "covered", "calendar"] as const;
 type MoneyTab = (typeof MONEY_TABS)[number];
@@ -111,7 +123,7 @@ function OverviewTab() {
   const today = format(new Date(), "yyyy-MM-dd");
   const month = format(new Date(), "yyyy-MM");
   
-  const { data: dashboard } = useDashboard(undefined, month, today);
+  const { data: dashboard, data: prevDashboard } = useDashboard(undefined, month, today);
   const { data: finance } = useFinance(undefined, today);
   const expenseTrend = useExpenseTrend(undefined, true);
   
@@ -123,107 +135,90 @@ function OverviewTab() {
   const buffer = finance?.buffer || 0;
   const savings = finance?.savings || 0;
   const todayDifference = finance?.todayDifference || 0;
+  const categoryData = dashboard?.categorySpending || [];
+
+  const allExpenses = useMemo(() => {
+    return expenseTrend.data.flatMap((entry) => entry.expenses);
+  }, [expenseTrend.data]);
+
+  const summary: FinancialSummary = useMemo(() => ({
+    remaining,
+    totalSpent,
+    monthlyBudget,
+    dailyLimit,
+    todaySpent,
+    buffer,
+    savings,
+    todayDifference,
+  }), [remaining, totalSpent, monthlyBudget, dailyLimit, todaySpent, buffer, savings, todayDifference]);
+
+  const pace = useMemo(() => {
+    return calculateSpendingPace(totalSpent, monthlyBudget);
+  }, [totalSpent, monthlyBudget]);
+
+  const trend = useMemo(() => {
+    return analyzeTrend(allExpenses, month);
+  }, [allExpenses, month]);
+
+  const health = useMemo(() => {
+    const prevMonthTotal = prevDashboard?.totalSpent || 0;
+    return calculateFinancialHealth(summary, pace, prevMonthTotal);
+  }, [summary, pace, prevDashboard]);
+
+  const insights = useMemo(() => {
+    return generateFinancialInsights(health, pace, trend, categoryData);
+  }, [health, pace, trend, categoryData]);
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _health = health;
+
+  const avgTransactionAmount = useMemo(() => {
+    if (allExpenses.length === 0) return 0;
+    return allExpenses.reduce((sum, e) => sum + e.amount, 0) / allExpenses.length;
+  }, [allExpenses]);
 
   return (
     <div className="space-y-5">
       <div className="pt-2">
         <h1 className="font-display text-4xl font-bold tracking-tight">Money</h1>
-        <p className="text-sm text-muted-foreground mt-1">Your financial overview at a glance</p>
+        <p className="text-sm text-muted-foreground mt-1">Your financial intelligence at a glance</p>
       </div>
 
-      <div className="bg-gradient-to-br from-surface-dark via-[#1a3a2e] to-[#0f2420] rounded-[2rem] shadow-float p-6 text-primary-foreground overflow-hidden relative border border-white/5">
-        <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-mint/20 blur-3xl" />
-        <div className="relative">
-          <div className="flex justify-between items-start">
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.25em] text-mint/70">Available Balance</div>
-              <div className="font-display text-4xl font-bold mt-1">{formatRupees(remaining)}</div>
-            </div>
-            <div className="text-right">
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60">This Month</div>
-              <div className="text-sm text-muted-foreground/80">Spent {formatRupees(totalSpent)} of {formatRupees(monthlyBudget)}</div>
-            </div>
-          </div>
-          
-          <div className="mt-6 h-2 bg-white/10 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-mint to-emerald-400 rounded-full transition-all duration-500"
-              style={{ width: `${Math.min((totalSpent / monthlyBudget) * 100, 100)}%` }}
-            />
-          </div>
-          
-          <div className="flex justify-between mt-2 text-[10px] text-muted-foreground/60">
-            <span>{Math.round((totalSpent / monthlyBudget) * 100)}% used</span>
-            <span>{Math.round(100 - (totalSpent / monthlyBudget) * 100)}% remaining</span>
-          </div>
-        </div>
-      </div>
+      <FinancialHeroCard
+        remaining={remaining}
+        totalSpent={totalSpent}
+        monthlyBudget={monthlyBudget}
+        health={health}
+        pace={pace}
+        trend={trend}
+      />
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-card rounded-[1.75rem] shadow-soft p-5">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground mb-3">
-            <Wallet className="h-4 w-4 text-primary" />
-            Daily Limit
-          </div>
-          <div className="font-display text-2xl font-bold">{formatRupees(dailyLimit)}</div>
-          <div className={cn("text-xs mt-2", todaySpent > dailyLimit ? "text-coral" : "text-muted-foreground")}>
-            Spent: {formatRupees(todaySpent)}
-          </div>
-        </div>
+      {insights.length > 0 && (
+        <FinancialInsightStrip insights={insights} />
+      )}
 
-        <div className="bg-card rounded-[1.75rem] shadow-soft p-5">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground mb-3">
-            <TrendingDown className="h-4 w-4 text-primary" />
-            Today
-          </div>
-          <div className={cn("font-display text-2xl font-bold", todayDifference > 0 ? "text-mint" : "text-coral")}>
-            {todayDifference > 0 ? "+" : ""}{formatRupees(todayDifference)}
-          </div>
-          <div className="text-xs text-muted-foreground mt-2">
-            {todayDifference > 0 ? "Under budget" : "Over budget"}
-          </div>
-        </div>
+      <SmartStatGrid
+        dailyLimit={dailyLimit}
+        todaySpent={todaySpent}
+        todayDifference={todayDifference}
+        buffer={buffer}
+        savings={savings}
+        paceStatus={pace.status}
+      />
 
-        <div className="bg-card rounded-[1.75rem] shadow-soft p-5">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground mb-3">
-            <PiggyBank className="h-4 w-4 text-primary" />
-            Buffer
-          </div>
-          <div className="font-display text-2xl font-bold">{formatRupees(buffer)}</div>
-          <div className="text-xs text-muted-foreground mt-2">Emergency fund</div>
-        </div>
+      <EnhancedSpendingTrend 
+        expenses={allExpenses} 
+        isLoading={expenseTrend.isLoading}
+        trend={trend}
+      />
 
-        <div className="bg-card rounded-[1.75rem] shadow-soft p-5">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground mb-3">
-            <TrendingUp className="h-4 w-4 text-primary" />
-            Savings
-          </div>
-          <div className="font-display text-2xl font-bold text-mint">{formatRupees(savings)}</div>
-          <div className="text-xs text-muted-foreground mt-2">Cumulative</div>
-        </div>
-      </div>
-
-      <SpendingTrendChart expenses={expenseTrend.data.flatMap((entry) => entry.expenses)} isLoading={expenseTrend.isLoading} />
-
-      <CategoryPressure data={dashboard?.categorySpending || []} />
+      <CategoryPressure data={categoryData} />
 
       {dashboard?.recentTransactions?.[0] && (
-        <div className="bg-card rounded-[1.75rem] shadow-soft p-4 border border-border/30">
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-3">Latest Transaction</div>
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center">
-              {(() => {
-                const Icon = categoryIcons[dashboard.recentTransactions[0].categoryName] || categoryIcons.default;
-                return <Icon className="h-5 w-5 text-muted-foreground" />;
-              })()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-medium truncate">{dashboard.recentTransactions[0].note?.split(" | ")[0] || dashboard.recentTransactions[0].categoryName}</div>
-              <div className="text-xs text-muted-foreground">{dashboard.recentTransactions[0].categoryName}</div>
-            </div>
-            <div className="font-display font-bold text-coral">-{formatRupees(dashboard.recentTransactions[0].amount)}</div>
-          </div>
-        </div>
+        <SmartActivityCard 
+          expense={dashboard.recentTransactions[0]} 
+          averageAmount={avgTransactionAmount}
+        />
       )}
     </div>
   );
