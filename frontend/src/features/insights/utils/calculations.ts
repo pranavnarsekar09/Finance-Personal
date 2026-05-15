@@ -175,7 +175,8 @@ export function generateFinancialInsights(
   expenses: Expense[],
   finance: Finance,
   coveredExpenses: CoveredExpense[],
-  dashboard: DashboardSummary | undefined
+  dashboard: DashboardSummary | undefined,
+  aiPredictions?: { title: string; detail: string; tone: string }[]
 ): FinancialInsight[] {
   const insights: FinancialInsight[] = [];
 
@@ -248,13 +249,26 @@ export function generateFinancialInsights(
     : 0;
   const runwayDays = dailySpend > 0 ? Math.round((buffer + finance?.savings || 0) / dailySpend) : 999;
   
+  const budgetPrediction = aiPredictions?.find(p => 
+    p.title.toLowerCase().includes("budget") || p.title.toLowerCase().includes("runway") || p.title.toLowerCase().includes("survival")
+  );
+  
+  const runwayValue = budgetPrediction 
+    ? budgetPrediction.detail.match(/\d+/)?.[0] + " days" 
+    : `${runwayDays} days`;
+  
   insights.push({
     id: "budget-runway",
     type: "budget-runway",
     title: "Budget Runway",
-    value: `${runwayDays} days`,
-    subtitle: "at current daily spend",
-    severity: runwayDays > 30 ? "success" : runwayDays > 7 ? "warning" : "critical",
+    value: runwayValue,
+    subtitle: budgetPrediction ? "AI predicted" : "at current daily spend",
+    severity: budgetPrediction 
+      ? (budgetPrediction.tone === "positive" ? "success" : budgetPrediction.tone === "warning" ? "warning" : "neutral")
+      : runwayDays > 30 ? "success" : runwayDays > 7 ? "warning" : "critical",
+    trend: budgetPrediction 
+      ? (budgetPrediction.tone === "positive" ? "up" : "down")
+      : undefined,
   });
 
   const savings = finance?.savings || 0;
@@ -873,7 +887,8 @@ export function generateInsightsData(
     thisMonthExpenses(expenses),
     finance || { dailyLimit: 100, buffer: 0, savings: 0 },
     coveredExpenses,
-    dashboard
+    dashboard,
+    aiData?.predictions
   );
 
   const healthInsights = generateHealthInsights(thisWeekMeals, dashboard);
