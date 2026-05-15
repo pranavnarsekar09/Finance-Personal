@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Car, ShoppingBag, Utensils, Zap, Coffee, Wallet, PiggyBank, TrendingUp, TrendingDown, Calendar as CalendarIcon } from "lucide-react";
 import { useExpenses, useCalendar, useProfile, useDeleteExpense, useDeleteExpensesByMonth, useDeleteFoodLog, useFinance, useDashboard, useExpenseTrend } from "@/hooks/useApi";
@@ -52,9 +53,24 @@ const categoryIcons: Record<string, any> = {
 };
 
 export default function Money() {
-  const [tab, setTab] = useState<MoneyTab>("overview");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get("tab");
+  const initialTab: MoneyTab = MONEY_TABS.includes(urlTab as MoneyTab) ? (urlTab as MoneyTab) : "overview";
+  
+  const [tab, setTab] = useState<MoneyTab>(initialTab);
   const [direction, setDirection] = useState(0);
   const { medium } = useHaptic();
+
+  useEffect(() => {
+    if (urlTab && MONEY_TABS.includes(urlTab as MoneyTab)) {
+      setTab(urlTab as MoneyTab);
+    }
+  }, [urlTab]);
+
+  const handleTabChange = (newTab: MoneyTab) => {
+    setTab(newTab);
+    setSearchParams({ tab: newTab });
+  };
 
   const pageVariants = {
     initial: (dir: number) => ({ x: dir > 0 ? 20 : -20, opacity: 0 }),
@@ -67,6 +83,7 @@ export default function Money() {
     const nextIndex = MONEY_TABS.indexOf(nextTab);
     setDirection(nextIndex > currentIndex ? 1 : -1);
     setTab(nextTab);
+    setSearchParams({ tab: nextTab });
     medium();
   };
 

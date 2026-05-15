@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Plus, Sun, Moon, AlertCircle, Edit2, Trash2, Download, FileText, FileSpreadsheet, Settings, FolderOpen, User as UserIcon, Target } from "lucide-react";
 import { toast } from "sonner";
@@ -34,9 +35,19 @@ const YOU_TABS = ["profile", "categories", "preferences", "data"] as const;
 type YouTab = (typeof YOU_TABS)[number];
 
 export default function You() {
-  const [tab, setTab] = useState<YouTab>("profile");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get("tab");
+  const initialTab: YouTab = YOU_TABS.includes(urlTab as YouTab) ? (urlTab as YouTab) : "profile";
+  
+  const [tab, setTab] = useState<YouTab>(initialTab);
   const [direction, setDirection] = useState(0);
   const { medium } = useHaptic();
+
+  useEffect(() => {
+    if (urlTab && YOU_TABS.includes(urlTab as YouTab)) {
+      setTab(urlTab as YouTab);
+    }
+  }, [urlTab]);
 
   const pageVariants = {
     initial: (dir: number) => ({ x: dir > 0 ? 20 : -20, opacity: 0 }),
@@ -49,6 +60,7 @@ export default function You() {
     const nextIndex = YOU_TABS.indexOf(nextTab);
     setDirection(nextIndex > currentIndex ? 1 : -1);
     setTab(nextTab);
+    setSearchParams({ tab: nextTab });
     medium();
   };
 

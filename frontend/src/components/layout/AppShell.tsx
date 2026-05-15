@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Wallet, Apple, User, Plus, Sparkles, X, Banknote } from "lucide-react";
@@ -13,6 +13,8 @@ import { LogMealSheet } from "@/components/sheets/LogMealSheet";
 import { AnalyzeFoodSheet } from "@/components/sheets/AnalyzeFoodSheet";
 import { AddMoneySheet } from "@/components/sheets/AddMoneySheet";
 import { SheetContext } from "@/context/SheetContext";
+import { TabNavigatorSheet } from "@/components/navigation/TabNavigatorSheet";
+import { MainTabId, NAVIGATION_CONFIG } from "@/lib/navigationConfig";
 
 const tabs = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, Comp: DashboardPage },
@@ -30,7 +32,27 @@ export default function AppShell() {
   const [analyzeOpen, setAnalyzeOpen] = useState(false);
   const [addMoneyOpen, setAddMoneyOpen] = useState(false);
   const [fabMenuOpen, setFabMenuOpen] = useState(false);
+  const [navigatorTab, setNavigatorTab] = useState<MainTabId | null>(null);
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const modalHistoryPushed = useRef(false);
+
+  const handleLongPressStart = useCallback((tabId: MainTabId) => {
+    const timer = setTimeout(() => {
+      setNavigatorTab(tabId);
+    }, 500);
+    setLongPressTimer(timer);
+  }, []);
+
+  const handleLongPressEnd = useCallback(() => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  }, [longPressTimer]);
+
+  const closeNavigator = useCallback(() => {
+    setNavigatorTab(null);
+  }, []);
 
   const active = useMemo(() => {
     const path = location.pathname.replace(/^\//, "") || "dashboard";
@@ -196,8 +218,13 @@ export default function AppShell() {
                 <button
                   key={t.id}
                   onClick={() => navigate(`/${t.id}`)}
+                  onMouseDown={() => handleLongPressStart(t.id as MainTabId)}
+                  onMouseUp={handleLongPressEnd}
+                  onMouseLeave={handleLongPressEnd}
+                  onTouchStart={() => handleLongPressStart(t.id as MainTabId)}
+                  onTouchEnd={handleLongPressEnd}
                   className={cn(
-                    "relative flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200",
+                    "relative flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200 select-none",
                     on ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                   )}
                 >
@@ -217,6 +244,12 @@ export default function AppShell() {
             })}
           </div>
         </nav>
+
+        <TabNavigatorSheet
+          isOpen={navigatorTab !== null}
+          onClose={closeNavigator}
+          activeTab={navigatorTab || "dashboard"}
+        />
 
         <ChatSheet open={chatOpen} onClose={closeSheet} />
         <AddExpenseSheet open={addOpen} onClose={closeSheet} />

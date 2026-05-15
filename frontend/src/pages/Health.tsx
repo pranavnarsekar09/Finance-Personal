@@ -1,4 +1,5 @@
-import { useState, useContext, useMemo } from "react";
+import { useState, useContext, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useDashboard, useFoodLogs, useDeleteFoodLog } from "@/hooks/useApi";
 import { useSwipeNative } from "@/hooks/useSwipe";
@@ -15,9 +16,19 @@ type HealthTab = (typeof HEALTH_TABS)[number];
 
 export default function Health() {
   const { setMealOpen, setAnalyzeOpen } = useContext(SheetContext);
-  const [tab, setTab] = useState<HealthTab>("today");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get("tab");
+  const initialTab: HealthTab = HEALTH_TABS.includes(urlTab as HealthTab) ? (urlTab as HealthTab) : "today";
+  
+  const [tab, setTab] = useState<HealthTab>(initialTab);
   const [direction, setDirection] = useState(0);
   const { medium } = useHaptic();
+
+  useEffect(() => {
+    if (urlTab && HEALTH_TABS.includes(urlTab as HealthTab)) {
+      setTab(urlTab as HealthTab);
+    }
+  }, [urlTab]);
 
   const pageVariants = {
     initial: (dir: number) => ({ x: dir > 0 ? 20 : -20, opacity: 0 }),
@@ -30,6 +41,7 @@ export default function Health() {
     const nextIndex = HEALTH_TABS.indexOf(nextTab);
     setDirection(nextIndex > currentIndex ? 1 : -1);
     setTab(nextTab);
+    setSearchParams({ tab: nextTab });
     medium();
   };
 

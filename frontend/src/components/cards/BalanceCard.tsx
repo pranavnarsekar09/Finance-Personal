@@ -138,7 +138,7 @@ export function BalanceCard({ total, spent, todaySpent, available, savings, savi
 
       <div className="px-2 pt-3">
         <div 
-          onClick={() => navigate("/money")}
+          onClick={() => navigate("/money?tab=transactions")}
           className="rounded-[1.35rem] bg-gradient-to-br from-secondary/70 to-secondary/50 px-4 py-3.5 cursor-pointer hover:from-secondary/80 hover:to-secondary/60 transition active:scale-[0.98] border border-border/30"
         >
           <div className="flex items-center justify-between gap-3">

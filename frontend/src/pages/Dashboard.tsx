@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -37,9 +38,19 @@ const trendIconMap = {
 } as const;
 
 export default function Dashboard() {
-  const [tab, setTab] = useState<DashboardTab>("today");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get("tab");
+  const initialTab: DashboardTab = DASHBOARD_TABS.includes(urlTab as DashboardTab) ? (urlTab as DashboardTab) : "today";
+  
+  const [tab, setTab] = useState<DashboardTab>(initialTab);
   const [direction, setDirection] = useState(0);
   const { medium } = useHaptic();
+
+  useEffect(() => {
+    if (urlTab && DASHBOARD_TABS.includes(urlTab as DashboardTab)) {
+      setTab(urlTab as DashboardTab);
+    }
+  }, [urlTab]);
 
   const pageVariants = {
     initial: (dir: number) => ({ x: dir > 0 ? 20 : -20, opacity: 0 }),
@@ -52,6 +63,7 @@ export default function Dashboard() {
     const nextIndex = DASHBOARD_TABS.indexOf(nextTab);
     setDirection(nextIndex > currentIndex ? 1 : -1);
     setTab(nextTab);
+    setSearchParams({ tab: nextTab });
     medium();
   };
 

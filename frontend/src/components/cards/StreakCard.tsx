@@ -1,4 +1,5 @@
 import { Flame } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface StreakCardProps {
   streak: number;
@@ -6,11 +7,15 @@ interface StreakCardProps {
 }
 
 export function StreakCard({ streak, isTodayActive = false }: StreakCardProps) {
+  const navigate = useNavigate();
   const today = new Date();
   const currentDayIndex = (today.getDay() + 6) % 7; // 0=M, 1=T, ..., 5=S, 6=S
 
   return (
-    <div className="bg-card rounded-[1.75rem] shadow-soft p-5 border border-border/30">
+    <div 
+      onClick={() => navigate("/money?tab=calendar")}
+      className="bg-card rounded-[1.75rem] shadow-soft p-5 border border-border/30 cursor-pointer hover:scale-[1.01] transition-transform"
+    >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="h-7 w-7 rounded-full bg-coral/15 flex items-center justify-center">
@@ -53,11 +58,15 @@ interface CalorieBarProps {
 }
 
 export function CalorieBar({ eaten, goal }: CalorieBarProps) {
+  const navigate = useNavigate();
   const pct = Math.min((eaten / goal) * 100, 100);
   const isOver = eaten > goal;
   
   return (
-    <div className="bg-card rounded-[1.75rem] shadow-soft p-5 border border-border/30">
+    <div 
+      onClick={() => navigate("/health")}
+      className="bg-card rounded-[1.75rem] shadow-soft p-5 border border-border/30 cursor-pointer hover:scale-[1.01] transition-transform"
+    >
       <div className="flex justify-between items-center mb-2">
         <span className="text-xs uppercase tracking-widest text-muted-foreground">Calories Today</span>
         <span className={`text-sm font-medium ${isOver ? "text-coral" : ""}`}>{Math.round(eaten)} / {goal} kcal</span>
