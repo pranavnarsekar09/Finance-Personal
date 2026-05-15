@@ -147,65 +147,88 @@ export default function AppShell() {
             {fabMenuOpen ? (
               <motion.div
                 key="fab-actions"
-                initial={{ opacity: 0, y: 16, scale: 0.92 }}
+                initial={{ opacity: 0, y: 20, scale: 0.9 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 12, scale: 0.95 }}
-                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                exit={{ opacity: 0, y: 20, scale: 0.9 }}
+                transition={{ type: "spring", damping: 28, stiffness: 320 }}
                 className="flex flex-col items-end gap-2"
               >
-                <button
+                <motion.button
                   type="button"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ type: "spring", damping: 28, stiffness: 320, delay: 0 }}
                   onClick={() => {
                     setChatOpen(true);
                     setFabMenuOpen(false);
                   }}
-                  className="group flex items-center gap-3 rounded-full bg-card pl-4 pr-2 py-2 shadow-float border border-border/40 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(139,92,246,0.2)] transition-all duration-200"
+                  whileTap={{ scale: 0.95 }}
+                  className="group flex items-center gap-3 rounded-full bg-card pl-4 pr-2 py-2 shadow-float border border-border/40 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(139,92,256,0.2)] transition-all duration-200"
                 >
                   <span className="text-sm font-medium text-foreground">Gemini chat</span>
                   <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 group-hover:scale-110 transition-transform duration-200">
                     <Sparkles className="h-5 w-5 text-white" />
                   </span>
-                </button>
-                <button
+                </motion.button>
+                <motion.button
                   type="button"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ type: "spring", damping: 28, stiffness: 320, delay: 0.03 }}
                   onClick={() => {
                     setAddMoneyOpen(true);
                     setFabMenuOpen(false);
                   }}
+                  whileTap={{ scale: 0.95 }}
                   className="group flex items-center gap-3 rounded-full bg-card pl-4 pr-2 py-2 shadow-float border border-border/40 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(16,185,129,0.2)] transition-all duration-200"
                 >
                   <span className="text-sm font-medium text-foreground">Add money</span>
                   <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-green-600 group-hover:scale-110 transition-transform duration-200">
                     <Banknote className="h-5 w-5 text-white" />
                   </span>
-                </button>
-                <button
+                </motion.button>
+                <motion.button
                   type="button"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ type: "spring", damping: 28, stiffness: 320, delay: 0.06 }}
                   onClick={() => {
                     setAddOpen(true);
                     setFabMenuOpen(false);
                   }}
+                  whileTap={{ scale: 0.95 }}
                   className="group flex items-center gap-3 rounded-full bg-card pl-4 pr-2 py-2 shadow-float border border-border/40 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(99,102,241,0.2)] transition-all duration-200"
                 >
                   <span className="text-sm font-medium text-foreground">Add expense</span>
                   <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 group-hover:scale-110 transition-transform duration-200">
                     <Plus className="h-6 w-6 text-white" />
                   </span>
-                </button>
+                </motion.button>
               </motion.div>
             ) : null}
           </AnimatePresence>
-          <button
+          <motion.button
             type="button"
             onClick={() => setFabMenuOpen((o) => !o)}
             aria-expanded={fabMenuOpen}
             aria-label={fabMenuOpen ? "Close quick actions" : "Open quick actions"}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.92 }}
             className="group relative h-14 w-14 rounded-full bg-gradient-to-br from-surface-dark via-surface-dark to-zinc-800 text-white shadow-float flex items-center justify-center hover:scale-105 transition-all duration-300"
           >
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-violet-500/30 via-transparent to-cyan-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="absolute inset-0 rounded-full shadow-[0_0_20px_rgba(139,92,246,0.3)] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <span className="relative z-10">{fabMenuOpen ? <X className="h-6 w-6" /> : <Plus className="h-6 w-6" />}</span>
-          </button>
+            <motion.span 
+              className="relative z-10"
+              animate={{ rotate: fabMenuOpen ? 90 : 0 }}
+              transition={{ type: "spring", damping: 20, stiffness: 300 }}
+            >
+              {fabMenuOpen ? <X className="h-6 w-6" /> : <Plus className="h-6 w-6" />}
+            </motion.span>
+          </motion.button>
         </div>
 
         {/* Bottom nav */}
